@@ -1,0 +1,151 @@
+import AppKit
+
+/// Entry point for every capture flow: runs the capture, then hands the result to the output pipeline.
+@MainActor
+final class CaptureService {
+    static let shared = CaptureService()
+
+    enum Output {
+        /// Run the configured after-capture actions (clipboard, file, Quick Access).
+        case image
+        /// Copy to the clipboard only: no Quick Access preview, no file.
+        case clipboardOnly
+        /// Recognize text in the selection and copy it.
+        case text
+    }
+
+    private var isBusy = false
+    private var overlay: SelectionOverlayController?
+
+    // MARK: Public flows
+
+    func captureArea(startInWindowMode: Bool = false, output: Output = .image, delay: TimeInterval = 0) {
+        run(delay: delay) {
+            let appName = Self.frontmostAppName()
+            let windows = output != .text ? ScreenCapturer.onScreenWindows() : []
+            let snapshots = try await ScreenCapturer.snapshotDisplays(includingWindows: PinManager.shared.windowIDs)
+            let controller = SelectionOverlayController(
+                snapshots: snapshots,
+                windows: windows,
+                initialMode: startInWindowMode ? .window : .area,
+                allowsWindowMode: output != .text
+            )
+            self.overlay = controller
+            let result = await controller.run()
+            self.overlay = nil
+
+            switch result {
+            case .cancelled:
+                return
+            case .area(let snapshot, let rect):
+                Preferences.lastArea = (snapshot.displayID, rect)
+                guard let image = snapshot.crop(rect) else { throw CaptureError.emptyImage }
+                let sourceRect = rect.offsetBy(dx: snapshot.screen.frame.minX, dy: snapshot.screen.frame.minY)
+                self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: sourceRect, appName: appName), output: output)
+            case .window(let info, let localRect, let snapshot):
+                let image = try await ScreenCapturer.captureWindow(id: info.id, includeShadow: Preferences.windowShadow)
+                let sourceRect = localRect.offsetBy(dx: snapshot.screen.frame.minX, dy: snapshot.screen.frame.minY)
+                self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: sourceRect, appName: info.ownerName), output: output)
+            }
+        }
+    }
+
+    func capturePreviousArea(delay: TimeInterval = 0) {
+        guard let last = Preferences.lastArea else {
+            captureArea(delay: delay)
+            return
+        }
+        run(delay: delay) {
+            let appName = Self.frontmostAppName()
+            let snapshots = try await ScreenCapturer.snapshotDisplays(
+                only: last.displayID, includingWindows: PinManager.shared.windowIDs
+            )
+            guard let snapshot = snapshots.first else { throw CaptureError.displayNotFound }
+            let rect = last.rect.intersection(CGRect(origin: .zero, size: snapshot.screen.frame.size))
+            guard !rect.isEmpty, let image = snapshot.crop(rect) else { throw CaptureError.emptyImage }
+            let sourceRect = rect.offsetBy(dx: snapshot.screen.frame.minX, dy: snapshot.screen.frame.minY)
+            self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: sourceRect, appName: appName), output: .image)
+        }
+    }
+
+    func captureFullscreen(delay: TimeInterval = 0) {
+        run(delay: delay) {
+            let appName = Self.frontmostAppName()
+            guard let displayID = NSScreen.underMouse?.displayID else { throw CaptureError.displayNotFound }
+            let snapshots = try await ScreenCapturer.snapshotDisplays(
+                only: displayID, includingWindows: PinManager.shared.windowIDs
+            )
+            guard let snapshot = snapshots.first else { throw CaptureError.displayNotFound }
+            self.deliver(Capture(image: snapshot.image, scale: snapshot.scale, sourceRect: snapshot.screen.frame, appName: appName), output: .image)
+        }
+    }
+
+    // MARK: Pipeline
+
+    private static func frontmostAppName() -> String? {
+        NSWorkspace.shared.frontmostApplication?.localizedName
+    }
+
+    private func run(delay: TimeInterval = 0, _ body: @escaping @MainActor () async throws -> Void) {
+        guard !isBusy else { return }
+        guard Permissions.hasScreenRecording else {
+            Permissions.requestScreenRecording()
+            Permissions.presentScreenRecordingAlert()
+            return
+        }
+        isBusy = true
+        Task { @MainActor in
+            defer { self.isBusy = false }
+            if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
+            do {
+                try await body()
+            } catch {
+                NSLog("OneShot: capture failed: \(error)")
+                Toast.show("Capture failed: \(error.localizedDescription)", symbol: "exclamationmark.triangle.fill")
+            }
+        }
+    }
+
+    private func deliver(_ capture: Capture, output: Output) {
+        switch output {
+        case .text:
+            TextRecognizer.recognizeAndCopy(capture.image)
+        case .clipboardOnly:
+            if Preferences.playSound { SoundPlayer.playCapture() }
+            ImageExporter.copyToClipboard(capture)
+            Toast.show("Copied to clipboard")
+        case .image:
+            if Preferences.playSound { SoundPlayer.playCapture() }
+            if Preferences.copyToClipboard { ImageExporter.copyToClipboard(capture) }
+
+            var savedURL: URL?
+            if Preferences.saveToDisk {
+                do {
+                    savedURL = try ImageExporter.save(capture)
+                } catch {
+                    Toast.show("Could not save: \(error.localizedDescription)", symbol: "exclamationmark.triangle.fill")
+                }
+            }
+
+            if Preferences.showQuickAccess {
+                QuickAccessManager.shared.show(capture, savedURL: savedURL)
+            } else if Preferences.copyToClipboard {
+                Toast.show("Copied to clipboard")
+            } else if let savedURL {
+                Toast.show("Saved to \(savedURL.deletingLastPathComponent().lastPathComponent)")
+            }
+        }
+    }
+}
+
+enum SoundPlayer {
+    private static let captureSound = NSSound(
+        contentsOfFile: "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/SystemSounds/system/Screen Capture.aif",
+        byReference: true
+    )
+
+    static func playCapture() {
+        captureSound?.stop()
+        captureSound?.play()
+    }
+}
