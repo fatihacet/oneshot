@@ -1,3 +1,5 @@
+<p align="center"><img src="Resources/AppIcon.png" width="128" alt="OneShot icon"></p>
+
 # OneShot
 
 A fast, open-source screenshot tool for macOS, inspired by CleanShot X. Lives in the menu bar.
@@ -42,6 +44,8 @@ make install   # builds build/OneShot.app, copies it to /Applications and launch
 ```
 
 Other targets: `make build` (debug build), `make app` (bundle only), `make run`, `make clean`.
+
+The app icon is drawn in code; regenerate it with `swift scripts/generate-icon.swift Resources/AppIcon.icns`.
 
 ### Why the local signing certificate?
 

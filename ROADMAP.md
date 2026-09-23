@@ -24,7 +24,7 @@ OneShot ships in small, usable milestones. Checked items are done.
 - [x] Crosshair guide lines across the screen
 - [x] Self-timer (3/5/10 s)
 - [x] Hide desktop icons during capture (and desktop widgets)
-- [ ] App icon
+- [x] App icon
 - [ ] M3: S3 upload
   - [ ] Any S3-compatible provider (AWS, Cloudflare R2, MinIO, Backblaze B2): endpoint, bucket, region, key prefix
   - [ ] Public or presigned URL copied to the clipboard after upload
