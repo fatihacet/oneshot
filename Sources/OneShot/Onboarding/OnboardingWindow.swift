@@ -3,7 +3,7 @@ import ApplicationServices
 import SwiftUI
 
 @MainActor
-final class OnboardingWindowController {
+final class OnboardingWindowController: NSObject, NSWindowDelegate {
     static let shared = OnboardingWindowController()
     private var window: NSWindow?
 
@@ -20,6 +20,7 @@ final class OnboardingWindowController {
             window.styleMask = [.titled, .closable, .fullSizeContentView]
             window.titlebarAppearsTransparent = true
             window.isReleasedWhenClosed = false
+            window.delegate = self
             window.center()
             self.window = window
         }
@@ -28,9 +29,13 @@ final class OnboardingWindowController {
     }
 
     private func finish() {
+        window?.close()
+    }
+
+    /// Closing the window early counts as done too; the assistant stays available in the menu.
+    func windowWillClose(_ notification: Notification) {
         UserDefaults.standard.set(true, forKey: Self.completedKey)
         UserDefaults.standard.removeObject(forKey: Self.stepKey)
-        window?.close()
         window = nil
     }
 }
