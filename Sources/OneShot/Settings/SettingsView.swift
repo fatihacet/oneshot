@@ -10,6 +10,7 @@ enum SettingsTab: String {
     case shortcuts
     case upload
     case history
+    case ai
 }
 
 @MainActor
@@ -59,6 +60,9 @@ struct SettingsView: View {
             HistorySettingsView()
                 .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
                 .tag(SettingsTab.history)
+            AISettingsView()
+                .tabItem { Label("AI", systemImage: "sparkles") }
+                .tag(SettingsTab.ai)
         }
         .frame(width: 540)
         .fixedSize(horizontal: false, vertical: true)

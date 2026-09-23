@@ -40,14 +40,14 @@ OneShot ships in small, usable milestones. Checked items are done.
   - [x] Padding, corner radius, shadow, alignment
   - [x] Aspect ratio presets (16:9, 1:1, 4:3, social sizes)
   - [x] Saved custom presets
-- [ ] History and semantic search
-  - [ ] Local history of every capture (SQLite + thumbnails, capture app/window metadata)
-  - [ ] Background indexing: on-device OCR plus vision-model captions and tags
-  - [ ] Hybrid search: full-text (FTS5) + embeddings (sqlite-vec)
-  - [ ] Providers: OpenAI, Anthropic, Google Gemini, Ollama (fully local)
-  - [ ] Filters by date, app and window title
-  - [ ] Actions from results: copy, pin, reveal in Finder, upload
-  - [ ] Retention policy, pause/resume indexing
+- [x] History and semantic search
+  - [x] Local history of every capture (SQLite + thumbnails, capture app/window metadata)
+  - [x] Background indexing: on-device OCR plus vision-model captions and tags
+  - [x] Hybrid search: full-text (FTS5) + embeddings (Accelerate cosine similarity; macOS SQLite cannot load sqlite-vec)
+  - [x] Providers: OpenAI, Anthropic, Google Gemini, Ollama (fully local)
+  - [x] Filters by date, app and window title
+  - [x] Actions from results: copy, pin, reveal in Finder, upload
+  - [x] Retention policy, pause/resume indexing
 - [ ] M7: Onboarding wizard
   - [ ] Permissions (Screen Recording; Accessibility where needed)
   - [ ] Save folder and default after-capture actions
