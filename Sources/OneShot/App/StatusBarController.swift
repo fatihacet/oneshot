@@ -32,6 +32,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         addItem("History…", shortcut: .openHistory) { HistoryWindowController.shared.show() }
+        addItem("Annotate Clipboard Image") { AnnotationEditorWindowController.shared.openClipboardImage() }
         addItem("Background Tool for Clipboard Image") { BackgroundToolWindowController.shared.openClipboardImage() }
         addItem("Upload Image from Clipboard") { Uploader.shared.uploadClipboardImage() }
         addItem("Upload History…") { UploadHistoryWindowController.shared.show() }

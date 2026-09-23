@@ -61,6 +61,7 @@ final class QuickAccessManager {
             copyText: { [weak self] in self?.copyText(item) },
             upload: { [weak self] in self?.upload(item) },
             background: { [weak self] in self?.openBackgroundTool(item) },
+            annotate: { [weak self] in self?.annotate(item) },
             open: { [weak self] in self?.open(item) },
             close: { [weak self] in self?.close(item) }
         ))
@@ -165,6 +166,11 @@ final class QuickAccessManager {
         close(item)
     }
 
+    private func annotate(_ item: QuickAccessItem) {
+        AnnotationEditorWindowController.shared.open(item.capture)
+        close(item)
+    }
+
     private func openBackgroundTool(_ item: QuickAccessItem) {
         BackgroundToolWindowController.shared.open(item.capture)
         close(item)
@@ -188,6 +194,7 @@ struct QuickAccessActions {
     let copyText: () -> Void
     let upload: () -> Void
     let background: () -> Void
+    let annotate: () -> Void
     let open: () -> Void
     let close: () -> Void
 }
@@ -232,6 +239,7 @@ private struct QuickAccessView: View {
                     HStack {
                         CornerButton(symbol: "text.viewfinder", help: "Copy text", action: actions.copyText)
                         CornerButton(symbol: "rectangle.center.inset.filled", help: "Add background", action: actions.background)
+                        CornerButton(symbol: "pencil.tip.crop.circle", help: "Annotate", action: actions.annotate)
                         Spacer()
                         CornerButton(symbol: "arrow.up.forward.app", help: "Open", action: actions.open)
                     }
@@ -247,7 +255,7 @@ private struct QuickAccessView: View {
         )
         .contentShape(Rectangle())
         .onHover { item.isHovering = $0 }
-        .onTapGesture(count: 2, perform: actions.open)
+        .onTapGesture(count: 2, perform: actions.annotate)
         .onDrag {
             guard let url = item.fileURL() else { return NSItemProvider() }
             return NSItemProvider(contentsOf: url) ?? NSItemProvider()

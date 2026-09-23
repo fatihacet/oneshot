@@ -13,6 +13,7 @@ A fast, open-source screenshot tool for macOS, inspired by CleanShot X. Lives in
 - **Copy to clipboard** (including a copy-only shortcut that skips the preview) and/or **save to a folder** (PNG or JPEG, Retina-aware DPI, optional 1x)
 - **Quick Access overlay**: thumbnail after each capture with Copy, Save, Pin, Copy Text, Open, and drag & drop into any app
 - **Pin to screen**: always-on-top screenshots. Scroll to resize, <kbd>⌥</kbd> + scroll for opacity, right-click for more, click-through lock
+- **Annotate**: arrows, lines, rectangles, ellipses, pen, highlighter, text, numbered steps, pixelate redaction and crop, with undo/redo and single-key tool shortcuts
 - **Background tool**: gradients, colors or pictures behind a screenshot with padding, rounded corners, shadow, aspect ratio presets, alignment and saved presets
 - **Upload to S3-compatible storage** (AWS S3, Cloudflare R2, Backblaze B2, MinIO): public, custom-domain or presigned links copied to the clipboard, upload history with remote delete, keys in the Keychain
 - **History and search**: every capture is kept locally (configurable retention) and indexed with on-device OCR and embeddings; optional AI captions and tags from OpenAI, Anthropic, Google Gemini or a local Ollama model; hybrid keyword + semantic search with date and app filters

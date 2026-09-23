@@ -146,6 +146,11 @@ final class HistoryBrowserModel: ObservableObject {
         Uploader.shared.upload(capture)
     }
 
+    func annotate(_ item: HistoryItem) {
+        guard let capture = capture(for: item) else { return }
+        AnnotationEditorWindowController.shared.open(capture)
+    }
+
     func openBackgroundTool(_ item: HistoryItem) {
         guard let capture = capture(for: item) else { return }
         BackgroundToolWindowController.shared.open(capture)
@@ -352,6 +357,7 @@ private struct HistoryActionsMenu: View {
         Button("Copy") { model.copy(item) }
         Button("Copy Text") { model.copyText(item) }
         Button("Pin to Screen") { model.pin(item) }
+        Button("Annotate…") { model.annotate(item) }
         Button("Add Background…") { model.openBackgroundTool(item) }
         if UploadSettings.isConfigured {
             Button("Upload") { model.upload(item) }

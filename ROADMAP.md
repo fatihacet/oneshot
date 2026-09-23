@@ -54,7 +54,7 @@ OneShot ships in small, usable milestones. Checked items are done.
   - [x] Shortcut setup, including taking over the macOS shortcuts
   - [x] Optional S3 setup with "Test connection"
   - [x] Optional LLM provider and API key (skippable; Ollama needs no key)
-- [ ] Annotation tools
+- [x] Annotation tools (arrow, line, rectangle, ellipse, pen, highlighter, text, counter, pixelate, crop)
 - [ ] Screen recording / GIF
 - [ ] URL scheme and CLI (`oneshot://capture-area`) for Raycast/Alfred
 - [ ] Auto-update via Sparkle

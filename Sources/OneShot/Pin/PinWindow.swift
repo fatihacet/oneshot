@@ -146,6 +146,10 @@ final class PinWindow: NSPanel {
         }
     }
 
+    @objc func openAnnotationEditor() {
+        MainActor.assumeIsolated { AnnotationEditorWindowController.shared.open(capture) }
+    }
+
     @objc func openBackgroundTool() {
         MainActor.assumeIsolated { BackgroundToolWindowController.shared.open(capture) }
     }
@@ -289,6 +293,7 @@ private final class PinContentView: NSView {
         add("Save", #selector(PinWindow.saveImage), key: "s")
         add("Copy Text", #selector(PinWindow.copyText))
         add("Upload", #selector(PinWindow.uploadImage))
+        add("Annotate…", #selector(PinWindow.openAnnotationEditor))
         add("Add Background…", #selector(PinWindow.openBackgroundTool))
         menu.addItem(.separator())
 
