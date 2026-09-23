@@ -22,7 +22,7 @@ OneShot ships in small, usable milestones. Checked items are done.
 
 ## Task List
 - [x] Crosshair guide lines across the screen
-- [ ] Self-timer (3/5/10 s)
+- [x] Self-timer (3/5/10 s)
 - [ ] Hide desktop icons during capture
 - [ ] App icon
 - [ ] M3: S3 upload

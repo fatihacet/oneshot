@@ -150,6 +150,7 @@ private struct CaptureSettingsView: View {
     @AppStorage(PrefKey.downscaleRetina) private var downscaleRetina = false
     @AppStorage(PrefKey.windowShadow) private var windowShadow = true
     @AppStorage(PrefKey.showCrosshair) private var showCrosshair = true
+    @AppStorage(PrefKey.selfTimerSeconds) private var selfTimerSeconds = 5
     @AppStorage(PrefKey.ocrKeepLineBreaks) private var ocrKeepLineBreaks = true
 
     var body: some View {
@@ -168,6 +169,9 @@ private struct CaptureSettingsView: View {
             }
             Section("Area selection") {
                 Toggle("Show crosshair guides", isOn: $showCrosshair)
+                Picker("Self-timer", selection: $selfTimerSeconds) {
+                    ForEach(Preferences.selfTimerChoices, id: \.self) { Text("\($0) seconds").tag($0) }
+                }
             }
             Section("Window capture") {
                 Toggle("Include window shadow", isOn: $windowShadow)

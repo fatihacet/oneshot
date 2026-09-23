@@ -27,6 +27,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         for action in ShortcutAction.allCases {
             addItem(action.title, shortcut: action) { [menuDelay] in action.perform(delay: menuDelay) }
         }
+        menu.addItem(selfTimerItem())
 
         menu.addItem(.separator())
 
@@ -54,6 +55,18 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         addItem("Settings…", key: ",") { SettingsWindowController.shared.show() }
         menu.addItem(.separator())
         addItem("Quit OneShot", key: "q") { NSApp.terminate(nil) }
+    }
+
+    private func selfTimerItem() -> NSMenuItem {
+        let item = NSMenuItem(title: "Self-Timer: \(Preferences.selfTimerSeconds) s", action: nil, keyEquivalent: "")
+        let submenu = NSMenu()
+        for seconds in Preferences.selfTimerChoices {
+            let choice = ClosureMenuItem(title: "\(seconds) seconds") { Preferences.selfTimerSeconds = seconds }
+            choice.state = Preferences.selfTimerSeconds == seconds ? .on : .off
+            submenu.addItem(choice)
+        }
+        item.submenu = submenu
+        return item
     }
 
     private func addItem(

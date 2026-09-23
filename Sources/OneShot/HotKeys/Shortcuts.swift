@@ -8,6 +8,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case capturePreviousArea
     case captureWindow
     case captureFullscreen
+    case captureAreaWithTimer
+    case captureFullscreenWithTimer
     case captureText
 
     var id: String { rawValue }
@@ -19,6 +21,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .capturePreviousArea: return "Capture Previous Area"
         case .captureWindow: return "Capture Window"
         case .captureFullscreen: return "Capture Fullscreen"
+        case .captureAreaWithTimer: return "Capture Area with Timer"
+        case .captureFullscreenWithTimer: return "Capture Fullscreen with Timer"
         case .captureText: return "Capture Text (OCR)"
         }
     }
@@ -26,6 +30,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     var subtitle: String? {
         switch self {
         case .captureAreaToClipboard: return "Copies only. No preview, no file."
+        case .captureAreaWithTimer: return "Select an area, then capture after the self-timer."
         default: return nil
         }
     }
@@ -39,7 +44,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.control)
         case .capturePreviousArea:
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.option)
-        case .captureWindow:
+        case .captureWindow, .captureAreaWithTimer, .captureFullscreenWithTimer:
             return nil
         case .captureFullscreen:
             return HotKey(keyCode: UInt32(kVK_ANSI_3), modifiers: commandShift)
@@ -57,6 +62,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .capturePreviousArea: service.capturePreviousArea(delay: delay)
         case .captureWindow: service.captureArea(startInWindowMode: true, delay: delay)
         case .captureFullscreen: service.captureFullscreen(delay: delay)
+        case .captureAreaWithTimer: service.captureArea(timer: Preferences.selfTimerSeconds, delay: delay)
+        case .captureFullscreenWithTimer: service.captureFullscreen(timer: Preferences.selfTimerSeconds, delay: delay)
         case .captureText: service.captureArea(output: .text, delay: delay)
         }
     }

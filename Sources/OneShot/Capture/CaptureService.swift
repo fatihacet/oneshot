@@ -19,7 +19,8 @@ final class CaptureService {
 
     // MARK: Public flows
 
-    func captureArea(startInWindowMode: Bool = false, output: Output = .image, delay: TimeInterval = 0) {
+    /// - Parameter timer: Seconds to count down after the selection before capturing the live screen.
+    func captureArea(startInWindowMode: Bool = false, output: Output = .image, timer: Int = 0, delay: TimeInterval = 0) {
         run(delay: delay) {
             let appName = Self.frontmostAppName()
             let windows = output != .text ? ScreenCapturer.onScreenWindows() : []
@@ -39,10 +40,22 @@ final class CaptureService {
                 return
             case .area(let snapshot, let rect):
                 Preferences.lastArea = (snapshot.displayID, rect)
-                guard let image = snapshot.crop(rect) else { throw CaptureError.emptyImage }
+                var source = snapshot
+                if timer > 0 {
+                    guard await Countdown.run(seconds: timer, on: snapshot.screen) else { return }
+                    let live = try await ScreenCapturer.snapshotDisplays(
+                        only: snapshot.displayID, includingWindows: PinManager.shared.windowIDs
+                    )
+                    guard let first = live.first else { throw CaptureError.displayNotFound }
+                    source = first
+                }
+                guard let image = source.crop(rect) else { throw CaptureError.emptyImage }
                 let sourceRect = rect.offsetBy(dx: snapshot.screen.frame.minX, dy: snapshot.screen.frame.minY)
                 self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: sourceRect, appName: appName), output: output)
             case .window(let info, let localRect, let snapshot):
+                if timer > 0 {
+                    guard await Countdown.run(seconds: timer, on: snapshot.screen) else { return }
+                }
                 let image = try await ScreenCapturer.captureWindow(id: info.id, includeShadow: Preferences.windowShadow)
                 let sourceRect = localRect.offsetBy(dx: snapshot.screen.frame.minX, dy: snapshot.screen.frame.minY)
                 self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: sourceRect, appName: info.ownerName), output: output)
@@ -68,10 +81,14 @@ final class CaptureService {
         }
     }
 
-    func captureFullscreen(delay: TimeInterval = 0) {
+    func captureFullscreen(timer: Int = 0, delay: TimeInterval = 0) {
         run(delay: delay) {
+            let screen = NSScreen.underMouse
+            if timer > 0 {
+                guard await Countdown.run(seconds: timer, on: screen) else { return }
+            }
             let appName = Self.frontmostAppName()
-            guard let displayID = NSScreen.underMouse?.displayID else { throw CaptureError.displayNotFound }
+            guard let displayID = screen?.displayID else { throw CaptureError.displayNotFound }
             let snapshots = try await ScreenCapturer.snapshotDisplays(
                 only: displayID, includingWindows: PinManager.shared.windowIDs
             )
