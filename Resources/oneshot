@@ -1,0 +1,65 @@
+#!/bin/sh
+# OneShot command line tool. Forwards commands to the OneShot app through its oneshot:// URL scheme.
+
+usage() {
+    cat <<'USAGE'
+Usage: oneshot <command> [--timer <seconds>]
+
+Capture:
+  capture-area                 Select an area (Space: window, Return: whole screen)
+  capture-area-to-clipboard    Select an area and copy it, without preview or file
+  capture-previous-area        Capture the last selected area again
+  capture-window               Pick a window
+  capture-scrolling            Capture a scrolling area
+  capture-fullscreen           Capture the screen under the pointer
+  capture-area-with-timer      Select an area, capture after the self-timer
+  capture-fullscreen-with-timer
+  capture-text                 Recognize text in an area and copy it
+
+Recording:
+  record-video                 Start or stop a screen recording
+  record-gif                   Start or stop a GIF recording
+  stop-recording
+
+Clipboard image:
+  pin-clipboard  upload-clipboard  annotate-clipboard  background-clipboard
+
+App:
+  open-history  open-settings  setup
+
+Options:
+  --timer <seconds>            Delay for capture-area and capture-fullscreen
+USAGE
+}
+
+if [ $# -eq 0 ]; then
+    usage
+    exit 1
+fi
+
+case "$1" in
+    -h|--help|help)
+        usage
+        exit 0
+        ;;
+esac
+
+command="$1"
+shift
+query=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --timer)
+            query="timer=$2"
+            shift 2
+            ;;
+        *)
+            echo "oneshot: unknown option: $1" >&2
+            exit 1
+            ;;
+    esac
+done
+
+url="oneshot://$command"
+[ -n "$query" ] && url="$url?$query"
+exec /usr/bin/open -g "$url"

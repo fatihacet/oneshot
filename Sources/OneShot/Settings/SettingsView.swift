@@ -131,6 +131,17 @@ private struct GeneralSettingsView: View {
                         .disabled(fileNamePattern == FileNamePattern.defaultPattern)
                 }
             }
+            Section {
+                LabeledContent("Command line tool") {
+                    Button(CLIInstaller.installedLink == nil ? "Install…" : "Reinstall…") { CLIInstaller.install() }
+                }
+            } header: {
+                Text("Automation")
+            } footer: {
+                Text("Run captures from Terminal, Raycast or Alfred with the oneshot command or oneshot:// links, e.g. oneshot://capture-area.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("General") {
                 Toggle("Play sound", isOn: $playSound)
                 Toggle("Launch at login", isOn: $launchAtLogin)

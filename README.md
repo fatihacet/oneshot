@@ -37,6 +37,27 @@ All shortcuts can be changed or cleared in **Settings › Shortcuts**.
 
 macOS reserves <kbd>⇧⌘3</kbd> and <kbd>⇧⌘4</kbd> for its own screenshot tool. OneShot offers to disable those on first launch; you can toggle them any time in **Settings › Shortcuts**. Other screenshot apps using the same shortcuts (for example CleanShot X) must release them too.
 
+## Automation
+
+Every action has a `oneshot://` link, so OneShot works with Raycast, Alfred, Shortcuts or any launcher:
+
+```sh
+open -g "oneshot://capture-area"
+open -g "oneshot://capture-fullscreen?timer=5"
+open -g "oneshot://record-gif"          # run again (or oneshot://stop-recording) to stop
+```
+
+Install the `oneshot` command from **Settings › General › Automation** to use the same commands from a terminal:
+
+```sh
+oneshot capture-area-to-clipboard
+oneshot capture-text
+oneshot pin-clipboard
+oneshot --help
+```
+
+Commands: `capture-area`, `capture-area-to-clipboard`, `capture-previous-area`, `capture-window`, `capture-scrolling`, `capture-fullscreen`, `capture-area-with-timer`, `capture-fullscreen-with-timer`, `capture-text`, `record-video`, `record-gif`, `stop-recording`, `pin-clipboard`, `upload-clipboard`, `annotate-clipboard`, `background-clipboard`, `open-history`, `open-settings`, `setup`.
+
 ## Requirements
 
 - macOS 14 Sonoma or later

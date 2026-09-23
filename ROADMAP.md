@@ -56,5 +56,5 @@ OneShot ships in small, usable milestones. Checked items are done.
   - [x] Optional LLM provider and API key (skippable; Ollama needs no key)
 - [x] Annotation tools (arrow, line, rectangle, ellipse, pen, highlighter, text, counter, pixelate, crop)
 - [x] Screen recording / GIF (area, window or full screen; system audio; countdown)
-- [ ] URL scheme and CLI (`oneshot://capture-area`) for Raycast/Alfred
+- [x] URL scheme and CLI (`oneshot://capture-area`) for Raycast/Alfred
 - [ ] Auto-update via Sparkle
