@@ -52,6 +52,11 @@ enum PrefKey {
     static let historyEnabled = "historyEnabled"
     static let historyRetentionDays = "historyRetentionDays"
     static let indexingPaused = "indexingPaused"
+    static let recordAudio = "recordAudio"
+    static let recordCursor = "recordCursor"
+    static let recordCountdown = "recordCountdown"
+    static let gifFrameRate = "gifFrameRate"
+    static let gifMaxWidth = "gifMaxWidth"
     static let playSound = "playSound"
     static let ocrKeepLineBreaks = "ocrKeepLineBreaks"
     static let lastAreaDisplayID = "lastAreaDisplayID"
@@ -84,6 +89,11 @@ enum Preferences {
             PrefKey.historyEnabled: true,
             PrefKey.historyRetentionDays: 90,
             PrefKey.indexingPaused: false,
+            PrefKey.recordAudio: false,
+            PrefKey.recordCursor: true,
+            PrefKey.recordCountdown: 3,
+            PrefKey.gifFrameRate: 15,
+            PrefKey.gifMaxWidth: 960,
             PrefKey.playSound: true,
             PrefKey.ocrKeepLineBreaks: true,
         ])
@@ -117,6 +127,13 @@ enum Preferences {
     /// Days to keep captures in the history; 0 keeps them forever.
     static var historyRetentionDays: Int { defaults.integer(forKey: PrefKey.historyRetentionDays) }
     static var indexingPaused: Bool { defaults.bool(forKey: PrefKey.indexingPaused) }
+
+    static var recordAudio: Bool { defaults.bool(forKey: PrefKey.recordAudio) }
+    static var recordCursor: Bool { defaults.bool(forKey: PrefKey.recordCursor) }
+    /// Seconds to count down before a recording starts; 0 starts immediately.
+    static var recordCountdown: Int { defaults.integer(forKey: PrefKey.recordCountdown) }
+    static var gifFrameRate: Int { defaults.integer(forKey: PrefKey.gifFrameRate) }
+    static var gifMaxWidth: Int { defaults.integer(forKey: PrefKey.gifMaxWidth) }
 
     static let selfTimerChoices = [3, 5, 10]
 

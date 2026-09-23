@@ -113,6 +113,12 @@ final class SelectionOverlayController {
         finish(.cancelled)
     }
 
+    /// Return with no selection captures the whole screen under the pointer.
+    func selectWholeScreen() {
+        guard mode == .area, let view = views.first(where: \.hasPointer) ?? views.first else { return }
+        finish(.area(view.snapshot, rect: view.bounds))
+    }
+
     func finish(_ result: SelectionResult) {
         guard let continuation else { return }
         self.continuation = nil
@@ -172,6 +178,7 @@ final class SelectionOverlayView: NSView {
     private var isSpaceHeld = false
 
     var isDragging: Bool { dragStart != nil }
+    var hasPointer: Bool { pointer != nil }
     private var selection: CGRect?
     private var pointer: CGPoint?
     private var hoveredWindow: WindowTarget?
@@ -421,6 +428,8 @@ final class SelectionOverlayView: NSView {
             controller.cancel()
         case 49: // Space
             controller.spaceKey(isDown: true, isRepeat: event.isARepeat)
+        case 36, 76: // Return, Enter
+            if dragStart == nil { controller.selectWholeScreen() }
         default:
             break
         }

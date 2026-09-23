@@ -9,6 +9,7 @@ A fast, open-source screenshot tool for macOS, inspired by CleanShot X. Lives in
 - **Area capture** with a frozen screen, magnifier loupe and live size label
 - **Window capture**: press <kbd>Space</kbd> during area selection, click a window (optional shadow)
 - **Fullscreen** and **previous area** capture, **self-timer**
+- **Screen recording**: record an area, a window or the whole screen (press Return) to MP4 with optional system audio, or straight to an animated GIF; stop from the menu bar
 - **Scrolling capture**: scroll manually or let OneShot auto-scroll; frames are stitched live with sticky headers and footers kept once
 - **Copy to clipboard** (including a copy-only shortcut that skips the preview) and/or **save to a folder** (PNG or JPEG, Retina-aware DPI, optional 1x)
 - **Quick Access overlay**: thumbnail after each capture with Copy, Save, Pin, Copy Text, Open, and drag & drop into any app

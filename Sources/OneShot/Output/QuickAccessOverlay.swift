@@ -6,6 +6,8 @@ import SwiftUI
 final class QuickAccessItem: ObservableObject, Identifiable {
     let id = UUID()
     let capture: Capture
+    /// Set for screen recordings: the video or GIF file. `capture` is then its thumbnail.
+    let mediaURL: URL?
     @Published var savedURL: URL?
     @Published var isHovering = false {
         didSet { isHovering ? cancelAutoClose() : scheduleAutoClose() }
@@ -15,10 +17,13 @@ final class QuickAccessItem: ObservableObject, Identifiable {
     private var autoCloseTask: Task<Void, Never>?
     fileprivate var onAutoClose: (() -> Void)?
 
-    init(capture: Capture, savedURL: URL?) {
+    init(capture: Capture, savedURL: URL?, mediaURL: URL? = nil) {
         self.capture = capture
         self.savedURL = savedURL
+        self.mediaURL = mediaURL
     }
+
+    var isRecording: Bool { mediaURL != nil }
 
     func scheduleAutoClose() {
         cancelAutoClose()
@@ -38,6 +43,7 @@ final class QuickAccessItem: ObservableObject, Identifiable {
 
     /// A file on disk for drag and drop or opening in another app.
     func fileURL() -> URL? {
+        if let mediaURL { return mediaURL }
         if let savedURL, FileManager.default.fileExists(atPath: savedURL.path) { return savedURL }
         return try? ImageExporter.temporaryFile(for: capture)
     }
@@ -53,7 +59,16 @@ final class QuickAccessManager {
     private let margin: CGFloat = 20
 
     func show(_ capture: Capture, savedURL: URL?) {
-        let item = QuickAccessItem(capture: capture, savedURL: savedURL)
+        present(QuickAccessItem(capture: capture, savedURL: savedURL))
+    }
+
+    /// Shows a finished screen recording (video or GIF) with its first frame as the thumbnail.
+    func showRecording(at url: URL, thumbnail: CGImage) {
+        let scale = NSScreen.main?.backingScaleFactor ?? 2
+        present(QuickAccessItem(capture: Capture(image: thumbnail, scale: scale, sourceRect: nil), savedURL: url, mediaURL: url))
+    }
+
+    private func present(_ item: QuickAccessItem) {
         let view = QuickAccessView(item: item, actions: QuickAccessActions(
             copy: { [weak self] in self?.copy(item) },
             save: { [weak self] in self?.save(item) },
@@ -130,6 +145,14 @@ final class QuickAccessManager {
     // MARK: Actions
 
     private func copy(_ item: QuickAccessItem) {
+        if let mediaURL = item.mediaURL {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.writeObjects([mediaURL as NSURL])
+            Toast.show("Copied file to clipboard")
+            close(item)
+            return
+        }
         ImageExporter.copyToClipboard(item.capture)
         Toast.show("Copied to clipboard")
         close(item)
@@ -162,6 +185,11 @@ final class QuickAccessManager {
     }
 
     private func upload(_ item: QuickAccessItem) {
+        if let mediaURL = item.mediaURL {
+            Uploader.shared.upload(fileAt: mediaURL)
+            close(item)
+            return
+        }
         Uploader.shared.upload(item.capture)
         close(item)
     }
@@ -220,6 +248,25 @@ private struct QuickAccessView: View {
                 .frame(width: width, height: height)
                 .clipped()
 
+            if item.isRecording, !item.isHovering {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Label(
+                            item.mediaURL?.pathExtension.lowercased() == "gif" ? "GIF" : "Video",
+                            systemImage: item.mediaURL?.pathExtension.lowercased() == "gif" ? "photo.stack" : "play.fill"
+                        )
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.black.opacity(0.6), in: Capsule())
+                        Spacer()
+                    }
+                }
+                .padding(8)
+            }
+
             if item.isHovering {
                 Color.black.opacity(0.5)
                 VStack(spacing: 8) {
@@ -233,13 +280,17 @@ private struct QuickAccessView: View {
                     HStack {
                         CornerButton(symbol: "xmark", help: "Close", action: actions.close)
                         Spacer()
-                        CornerButton(symbol: "pin.fill", help: "Pin to screen", action: actions.pin)
+                        if !item.isRecording {
+                            CornerButton(symbol: "pin.fill", help: "Pin to screen", action: actions.pin)
+                        }
                     }
                     Spacer()
                     HStack {
-                        CornerButton(symbol: "text.viewfinder", help: "Copy text", action: actions.copyText)
-                        CornerButton(symbol: "rectangle.center.inset.filled", help: "Add background", action: actions.background)
-                        CornerButton(symbol: "pencil.tip.crop.circle", help: "Annotate", action: actions.annotate)
+                        if !item.isRecording {
+                            CornerButton(symbol: "text.viewfinder", help: "Copy text", action: actions.copyText)
+                            CornerButton(symbol: "rectangle.center.inset.filled", help: "Add background", action: actions.background)
+                            CornerButton(symbol: "pencil.tip.crop.circle", help: "Annotate", action: actions.annotate)
+                        }
                         Spacer()
                         CornerButton(symbol: "arrow.up.forward.app", help: "Open", action: actions.open)
                     }
@@ -255,7 +306,7 @@ private struct QuickAccessView: View {
         )
         .contentShape(Rectangle())
         .onHover { item.isHovering = $0 }
-        .onTapGesture(count: 2, perform: actions.annotate)
+        .onTapGesture(count: 2, perform: item.isRecording ? actions.open : actions.annotate)
         .onDrag {
             guard let url = item.fileURL() else { return NSItemProvider() }
             return NSItemProvider(contentsOf: url) ?? NSItemProvider()

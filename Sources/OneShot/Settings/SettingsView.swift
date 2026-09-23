@@ -184,6 +184,11 @@ private struct CaptureSettingsView: View {
     @AppStorage(PrefKey.selfTimerSeconds) private var selfTimerSeconds = 5
     @AppStorage(PrefKey.hideDesktopIcons) private var hideDesktopIcons = false
     @AppStorage(PrefKey.hideDesktopWidgets) private var hideDesktopWidgets = false
+    @AppStorage(PrefKey.recordAudio) private var recordAudio = false
+    @AppStorage(PrefKey.recordCursor) private var recordCursor = true
+    @AppStorage(PrefKey.recordCountdown) private var recordCountdown = 3
+    @AppStorage(PrefKey.gifFrameRate) private var gifFrameRate = 15
+    @AppStorage(PrefKey.gifMaxWidth) private var gifMaxWidth = 960
     @AppStorage(PrefKey.ocrKeepLineBreaks) private var ocrKeepLineBreaks = true
 
     var body: some View {
@@ -212,6 +217,21 @@ private struct CaptureSettingsView: View {
             }
             Section("Window capture") {
                 Toggle("Include window shadow", isOn: $windowShadow)
+            }
+            Section("Screen recording") {
+                Toggle("Record system audio (video only)", isOn: $recordAudio)
+                Toggle("Show the mouse pointer", isOn: $recordCursor)
+                Picker("Countdown", selection: $recordCountdown) {
+                    Text("None").tag(0)
+                    Text("3 seconds").tag(3)
+                    Text("5 seconds").tag(5)
+                }
+                Picker("GIF frame rate", selection: $gifFrameRate) {
+                    ForEach([10, 15, 20, 30], id: \.self) { Text("\($0) fps").tag($0) }
+                }
+                Picker("GIF maximum width", selection: $gifMaxWidth) {
+                    ForEach([480, 640, 960, 1280, 1920], id: \.self) { Text("\($0) px").tag($0) }
+                }
             }
             Section("Text recognition") {
                 Toggle("Keep line breaks", isOn: $ocrKeepLineBreaks)

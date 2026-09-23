@@ -80,6 +80,22 @@ enum ImageExporter {
         return url
     }
 
+    /// A new file URL in `directory` named by the file name pattern.
+    static func destinationURL(
+        fileExtension: String,
+        date: Date = Date(),
+        appName: String? = nil,
+        pixelSize: CGSize? = nil,
+        directory: URL = Preferences.saveDirectory
+    ) throws -> URL {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let baseName = FileNamePattern.fileName(
+            pattern: Preferences.fileNamePattern,
+            context: .init(date: date, appName: appName, pixelSize: pixelSize)
+        )
+        return uniqueURL(in: directory, baseName: baseName, fileExtension: fileExtension)
+    }
+
     /// Writes the capture to a temporary file, used for drag and drop and "open with".
     static func temporaryFile(for capture: Capture) throws -> URL {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("OneShot", isDirectory: true)

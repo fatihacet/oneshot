@@ -3,22 +3,69 @@ import AppKit
 /// The menu bar icon and its menu.
 @MainActor
 final class StatusBarController: NSObject, NSMenuDelegate {
-    private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    private(set) static var shared: StatusBarController?
+
+    private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let menu = NSMenu()
+    private var recordingTimer: Timer?
+    private var stopRecording: (() -> Void)?
 
     /// Delay for captures started from the menu, so the closing menu is not captured.
     private let menuDelay: TimeInterval = 0.25
 
     override init() {
         super.init()
-        if let button = statusItem.button {
-            let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "OneShot")
-            image?.isTemplate = true
-            button.image = image
-        }
+        showIdleIcon()
         menu.delegate = self
         menu.autoenablesItems = false
         statusItem.menu = menu
+        Self.shared = self
+    }
+
+    private func showIdleIcon() {
+        guard let button = statusItem.button else { return }
+        let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "OneShot")
+        image?.isTemplate = true
+        button.image = image
+        button.title = ""
+        button.imagePosition = .imageOnly
+        button.contentTintColor = nil
+    }
+
+    // MARK: Recording mode
+
+    /// Turns the menu bar item into a stop button with the elapsed time.
+    func showRecording(since start: Date, stop: @escaping () -> Void) {
+        stopRecording = stop
+        statusItem.menu = nil
+        guard let button = statusItem.button else { return }
+        button.image = NSImage(systemSymbolName: "stop.circle.fill", accessibilityDescription: "Stop recording")
+        button.contentTintColor = .systemRed
+        button.imagePosition = .imageLeading
+        button.target = self
+        button.action = #selector(stopClicked)
+        let update = { [weak button] in
+            let seconds = Int(Date().timeIntervalSince(start))
+            button?.title = String(format: " %d:%02d", seconds / 60, seconds % 60)
+        }
+        update()
+        recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            MainActor.assumeIsolated { update() }
+        }
+    }
+
+    func hideRecording() {
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        stopRecording = nil
+        statusItem.button?.target = nil
+        statusItem.button?.action = nil
+        showIdleIcon()
+        statusItem.menu = menu
+    }
+
+    @objc private func stopClicked() {
+        stopRecording?()
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {

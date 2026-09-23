@@ -12,6 +12,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case captureAreaWithTimer
     case captureFullscreenWithTimer
     case captureText
+    case recordVideo
+    case recordGIF
     case openHistory
 
     var id: String { rawValue }
@@ -27,6 +29,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureAreaWithTimer: return "Capture Area with Timer"
         case .captureFullscreenWithTimer: return "Capture Fullscreen with Timer"
         case .captureText: return "Capture Text (OCR)"
+        case .recordVideo: return "Record Screen"
+        case .recordGIF: return "Record GIF"
         case .openHistory: return "Open History"
         }
     }
@@ -36,6 +40,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureAreaToClipboard: return "Copies only. No preview, no file."
         case .captureAreaWithTimer: return "Select an area, then capture after the self-timer."
         case .captureScrolling: return "Select an area, then scroll to capture long pages."
+        case .recordVideo, .recordGIF: return "Press again to stop. Return records the whole screen."
         default: return nil
         }
     }
@@ -52,7 +57,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.control)
         case .capturePreviousArea:
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.option)
-        case .captureWindow, .captureScrolling, .captureAreaWithTimer, .captureFullscreenWithTimer, .openHistory:
+        case .captureWindow, .captureScrolling, .captureAreaWithTimer, .captureFullscreenWithTimer, .openHistory,
+             .recordVideo, .recordGIF:
             return nil
         case .captureFullscreen:
             return HotKey(keyCode: UInt32(kVK_ANSI_3), modifiers: commandShift)
@@ -74,6 +80,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureAreaWithTimer: service.captureArea(timer: Preferences.selfTimerSeconds, delay: delay)
         case .captureFullscreenWithTimer: service.captureFullscreen(timer: Preferences.selfTimerSeconds, delay: delay)
         case .captureText: service.captureArea(output: .text, delay: delay)
+        case .recordVideo: RecordingController.shared.toggle(format: .video, delay: delay)
+        case .recordGIF: RecordingController.shared.toggle(format: .gif, delay: delay)
         case .openHistory: HistoryWindowController.shared.show()
         }
     }
