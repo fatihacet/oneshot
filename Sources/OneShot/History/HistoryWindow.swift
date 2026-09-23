@@ -273,6 +273,9 @@ struct HistoryBrowserView: View {
                 }
                 .padding(14)
             }
+            // Without this the scroll view sizes to the grid's narrowest layout once the inspector
+            // shares the row, and the whole row shrinks to the window's minimum width.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onDeleteCommand {
                 if let item = model.selectedItem { model.delete(item) }
             }
