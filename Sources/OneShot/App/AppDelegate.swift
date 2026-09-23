@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = makeMainMenu()
         statusBar = StatusBarController()
         registerHotKeys()
+        _ = Updater.shared
         Task.detached(priority: .utility) {
             await HistoryService.shared.applyRetention(days: Preferences.historyRetentionDays)
             await HistoryIndexer.shared.wake()

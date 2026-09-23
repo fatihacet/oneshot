@@ -74,6 +74,10 @@ Other targets: `make build` (debug build), `make test` (unit tests), `make app` 
 
 The app icon is drawn in code; regenerate it with `swift scripts/generate-icon.swift Resources/AppIcon.icns`.
 
+### Releases and updates
+
+OneShot updates itself with [Sparkle](https://sparkle-project.org). `scripts/release.sh` builds a zip and an EdDSA-signed `appcast.xml` in `build/releases`; attach both to a GitHub release tagged `v<version>`. The feed URL (`SUFeedURL`) and public key (`SUPublicEDKey`) live in `Resources/Info.plist`. Forks must generate their own key with `.build/artifacts/sparkle/Sparkle/bin/generate_keys` and update both values.
+
 ### Why the local signing certificate?
 
 macOS ties the Screen Recording permission to the app's code signature. Ad-hoc signed builds get a new signature on every build, so macOS would ask for permission again after each rebuild. `make cert` creates a self-signed identity named `OneShot Local Signing` in your login keychain; `scripts/build-app.sh` uses it automatically. To use your own identity set `ONESHOT_SIGN_IDENTITY`.

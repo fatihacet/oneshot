@@ -41,6 +41,12 @@
     <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>SUFeedURL</key>
+    <string>https://github.com/fatihacet/oneshot/releases/latest/download/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>sz2PRPZFHjs6ei/r/ifRv9bLCa1t68QC1k1h9XLBhc8=</string>
+    <key>SUEnableInstallerLauncherService</key>
+    <false/>
     <key>NSHumanReadableCopyright</key>
     <string>MIT License</string>
 </dict>

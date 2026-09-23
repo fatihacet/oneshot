@@ -109,6 +109,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
         addItem("Settings…", key: ",") { SettingsWindowController.shared.show() }
         addItem("Setup Assistant…") { OnboardingWindowController.shared.show() }
+        addItem("Check for Updates…", enabled: Updater.shared.canCheckForUpdates) { Updater.shared.checkForUpdates() }
         menu.addItem(.separator())
         addItem("Quit OneShot", key: "q") { NSApp.terminate(nil) }
     }

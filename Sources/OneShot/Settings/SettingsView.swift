@@ -79,6 +79,7 @@ private struct GeneralSettingsView: View {
     @AppStorage(PrefKey.fileNamePattern) private var fileNamePattern = FileNamePattern.defaultPattern
     @AppStorage(PrefKey.imageFormat) private var imageFormat = ImageFormat.png.rawValue
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var checksForUpdates = Updater.shared.automaticallyChecksForUpdates
 
     var body: some View {
         Form {
@@ -146,6 +147,12 @@ private struct GeneralSettingsView: View {
                 Toggle("Play sound", isOn: $playSound)
                 Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, enabled in setLaunchAtLogin(enabled) }
+                HStack {
+                    Toggle("Check for updates automatically", isOn: $checksForUpdates)
+                        .onChange(of: checksForUpdates) { _, enabled in Updater.shared.automaticallyChecksForUpdates = enabled }
+                    Spacer()
+                    Button("Check Now") { Updater.shared.checkForUpdates() }
+                }
             }
         }
         .formStyle(.grouped)
