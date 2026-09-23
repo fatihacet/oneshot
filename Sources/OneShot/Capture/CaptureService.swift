@@ -22,7 +22,7 @@ final class CaptureService {
     /// - Parameter timer: Seconds to count down after the selection before capturing the live screen.
     func captureArea(startInWindowMode: Bool = false, output: Output = .image, timer: Int = 0, delay: TimeInterval = 0) {
         run(delay: delay) {
-            let appName = Self.frontmostAppName()
+            let context = ScreenCapturer.frontmostContext()
             let windows = output != .text ? ScreenCapturer.onScreenWindows() : []
             let snapshots = try await ScreenCapturer.snapshotDisplays(includingWindows: PinManager.shared.windowIDs)
             let controller = SelectionOverlayController(
@@ -51,14 +51,14 @@ final class CaptureService {
                 }
                 guard let image = source.crop(rect) else { throw CaptureError.emptyImage }
                 let sourceRect = rect.offsetBy(dx: snapshot.screen.frame.minX, dy: snapshot.screen.frame.minY)
-                self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: sourceRect, appName: appName), output: output)
+                self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: sourceRect, appName: context.appName, windowTitle: context.windowTitle), output: output)
             case .window(let info, let localRect, let snapshot):
                 if timer > 0 {
                     guard await Countdown.run(seconds: timer, on: snapshot.screen) else { return }
                 }
                 let image = try await ScreenCapturer.captureWindow(id: info.id, includeShadow: Preferences.windowShadow)
                 let sourceRect = localRect.offsetBy(dx: snapshot.screen.frame.minX, dy: snapshot.screen.frame.minY)
-                self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: sourceRect, appName: info.ownerName), output: output)
+                self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: sourceRect, appName: info.ownerName, windowTitle: info.title), output: output)
             }
         }
     }
@@ -66,7 +66,7 @@ final class CaptureService {
     /// Select a region, then scroll its content to capture more than fits on screen.
     func captureScrolling(delay: TimeInterval = 0) {
         run(delay: delay) {
-            let appName = Self.frontmostAppName()
+            let context = ScreenCapturer.frontmostContext()
             let snapshots = try await ScreenCapturer.snapshotDisplays(includingWindows: PinManager.shared.windowIDs)
             let controller = SelectionOverlayController(
                 snapshots: snapshots, windows: [], initialMode: .area, allowsWindowMode: false
@@ -80,7 +80,7 @@ final class CaptureService {
                 screen: snapshot.screen, displayID: snapshot.displayID, rect: rect, scale: snapshot.scale
             )
             guard let image = await session.run() else { return }
-            self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: nil, appName: appName), output: .image)
+            self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: nil, appName: context.appName, windowTitle: context.windowTitle), output: .image)
         }
     }
 
@@ -90,7 +90,7 @@ final class CaptureService {
             return
         }
         run(delay: delay) {
-            let appName = Self.frontmostAppName()
+            let context = ScreenCapturer.frontmostContext()
             let snapshots = try await ScreenCapturer.snapshotDisplays(
                 only: last.displayID, includingWindows: PinManager.shared.windowIDs
             )
@@ -98,7 +98,7 @@ final class CaptureService {
             let rect = last.rect.intersection(CGRect(origin: .zero, size: snapshot.screen.frame.size))
             guard !rect.isEmpty, let image = snapshot.crop(rect) else { throw CaptureError.emptyImage }
             let sourceRect = rect.offsetBy(dx: snapshot.screen.frame.minX, dy: snapshot.screen.frame.minY)
-            self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: sourceRect, appName: appName), output: .image)
+            self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: sourceRect, appName: context.appName, windowTitle: context.windowTitle), output: .image)
         }
     }
 
@@ -108,21 +108,17 @@ final class CaptureService {
             if timer > 0 {
                 guard await Countdown.run(seconds: timer, on: screen) else { return }
             }
-            let appName = Self.frontmostAppName()
+            let context = ScreenCapturer.frontmostContext()
             guard let displayID = screen?.displayID else { throw CaptureError.displayNotFound }
             let snapshots = try await ScreenCapturer.snapshotDisplays(
                 only: displayID, includingWindows: PinManager.shared.windowIDs
             )
             guard let snapshot = snapshots.first else { throw CaptureError.displayNotFound }
-            self.deliver(Capture(image: snapshot.image, scale: snapshot.scale, sourceRect: snapshot.screen.frame, appName: appName), output: .image)
+            self.deliver(Capture(image: snapshot.image, scale: snapshot.scale, sourceRect: snapshot.screen.frame, appName: context.appName, windowTitle: context.windowTitle), output: .image)
         }
     }
 
     // MARK: Pipeline
-
-    private static func frontmostAppName() -> String? {
-        NSWorkspace.shared.frontmostApplication?.localizedName
-    }
 
     private func run(delay: TimeInterval = 0, _ body: @escaping @MainActor () async throws -> Void) {
         guard !isBusy else { return }
@@ -145,12 +141,14 @@ final class CaptureService {
     }
 
     private func deliver(_ capture: Capture, output: Output) {
+        var capture = capture
         switch output {
         case .text:
             TextRecognizer.recognizeAndCopy(capture.image)
         case .clipboardOnly:
             if Preferences.playSound { SoundPlayer.playCapture() }
             ImageExporter.copyToClipboard(capture)
+            HistoryRecorder.record(&capture, savedURL: nil)
             Toast.show("Copied to clipboard")
         case .image:
             if Preferences.playSound { SoundPlayer.playCapture() }
@@ -164,6 +162,7 @@ final class CaptureService {
                     Toast.show("Could not save: \(error.localizedDescription)", symbol: "exclamationmark.triangle.fill")
                 }
             }
+            HistoryRecorder.record(&capture, savedURL: savedURL)
 
             if Preferences.uploadAfterCapture, UploadSettings.isConfigured {
                 Uploader.shared.upload(capture)

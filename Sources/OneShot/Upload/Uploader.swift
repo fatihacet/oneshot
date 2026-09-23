@@ -16,7 +16,10 @@ final class Uploader {
         let context = FileNamePattern.Context(
             date: capture.date, appName: capture.appName, pixelSize: capture.image.pixelSize
         )
-        Task { await upload(data: data, fileExtension: format.fileExtension, contentType: format.utType, context: context) }
+        Task {
+            let record = await upload(data: data, fileExtension: format.fileExtension, contentType: format.utType, context: context)
+            if let record { HistoryRecorder.noteUploaded(capture, link: record.link) }
+        }
     }
 
     func upload(fileAt url: URL) {

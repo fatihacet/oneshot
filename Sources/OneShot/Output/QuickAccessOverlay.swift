@@ -143,6 +143,7 @@ final class QuickAccessManager {
         do {
             let url = try ImageExporter.save(item.capture)
             item.savedURL = url
+            HistoryRecorder.noteSaved(item.capture, at: url)
             Toast.show("Saved to \(url.deletingLastPathComponent().lastPathComponent)")
             close(item)
         } catch {

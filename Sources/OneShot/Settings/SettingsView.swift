@@ -9,6 +9,7 @@ enum SettingsTab: String {
     case capture
     case shortcuts
     case upload
+    case history
 }
 
 @MainActor
@@ -55,6 +56,9 @@ struct SettingsView: View {
             UploadSettingsView()
                 .tabItem { Label("Upload", systemImage: "icloud.and.arrow.up") }
                 .tag(SettingsTab.upload)
+            HistorySettingsView()
+                .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
+                .tag(SettingsTab.history)
         }
         .frame(width: 540)
         .fixedSize(horizontal: false, vertical: true)

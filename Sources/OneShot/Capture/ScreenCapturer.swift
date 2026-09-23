@@ -29,6 +29,7 @@ struct WindowInfo {
     /// Frame in CoreGraphics global coordinates (top-left origin).
     let frame: CGRect
     let ownerName: String?
+    let title: String?
 }
 
 enum CaptureError: LocalizedError {
@@ -139,6 +140,18 @@ enum ScreenCapturer {
         return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
     }
 
+    /// The frontmost app and the title of its front window, captured before OneShot takes focus.
+    static func frontmostContext() -> (appName: String?, windowTitle: String?) {
+        guard let app = NSWorkspace.shared.frontmostApplication else { return (nil, nil) }
+        let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+        let list = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] ?? []
+        let title = list.first { entry in
+            (entry[kCGWindowOwnerPID as String] as? Int32) == app.processIdentifier
+                && (entry[kCGWindowLayer as String] as? Int) == 0
+        }?[kCGWindowName as String] as? String
+        return (app.localizedName, title?.isEmpty == true ? nil : title)
+    }
+
     /// Normal application windows currently on screen, ordered front to back.
     static func onScreenWindows() -> [WindowInfo] {
         let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
@@ -158,7 +171,8 @@ enum ScreenCapturer {
             return WindowInfo(
                 id: CGWindowID(number),
                 frame: frame,
-                ownerName: entry[kCGWindowOwnerName as String] as? String
+                ownerName: entry[kCGWindowOwnerName as String] as? String,
+                title: entry[kCGWindowName as String] as? String
             )
         }
     }

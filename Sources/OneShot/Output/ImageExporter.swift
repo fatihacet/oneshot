@@ -12,6 +12,10 @@ struct Capture {
     let sourceRect: CGRect?
     /// Name of the app that was frontmost (or owned the window) when capturing.
     var appName: String?
+    /// Title of that app's front window, when known.
+    var windowTitle: String?
+    /// ID of this capture in the local history, if it was recorded.
+    var historyID: String?
     let date = Date()
 
     var pointSize: CGSize {

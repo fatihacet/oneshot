@@ -49,6 +49,9 @@ enum PrefKey {
     static let uploadAfterCapture = "uploadAfterCapture"
     static let copyLinkAfterUpload = "copyLinkAfterUpload"
     static let uploadFileNamePattern = "uploadFileNamePattern"
+    static let historyEnabled = "historyEnabled"
+    static let historyRetentionDays = "historyRetentionDays"
+    static let indexingPaused = "indexingPaused"
     static let playSound = "playSound"
     static let ocrKeepLineBreaks = "ocrKeepLineBreaks"
     static let didCompleteFirstLaunch = "didCompleteFirstLaunch"
@@ -79,6 +82,9 @@ enum Preferences {
             PrefKey.uploadAfterCapture: false,
             PrefKey.copyLinkAfterUpload: true,
             PrefKey.uploadFileNamePattern: Preferences.defaultUploadFileNamePattern,
+            PrefKey.historyEnabled: true,
+            PrefKey.historyRetentionDays: 90,
+            PrefKey.indexingPaused: false,
             PrefKey.playSound: true,
             PrefKey.ocrKeepLineBreaks: true,
             PrefKey.didCompleteFirstLaunch: false,
@@ -108,6 +114,11 @@ enum Preferences {
     static var uploadFileNamePattern: String {
         defaults.string(forKey: PrefKey.uploadFileNamePattern) ?? defaultUploadFileNamePattern
     }
+
+    static var historyEnabled: Bool { defaults.bool(forKey: PrefKey.historyEnabled) }
+    /// Days to keep captures in the history; 0 keeps them forever.
+    static var historyRetentionDays: Int { defaults.integer(forKey: PrefKey.historyRetentionDays) }
+    static var indexingPaused: Bool { defaults.bool(forKey: PrefKey.indexingPaused) }
 
     static let selfTimerChoices = [3, 5, 10]
 

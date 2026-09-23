@@ -30,6 +30,22 @@ enum TextRecognizer {
         }.value
     }
 
+    /// All recognized text plus barcode payloads, for search indexing.
+    static func recognizeAllText(in image: CGImage) async throws -> String {
+        try await Task.detached(priority: .utility) {
+            let handler = VNImageRequestHandler(cgImage: image, options: [:])
+            let barcodeRequest = VNDetectBarcodesRequest()
+            let textRequest = VNRecognizeTextRequest()
+            textRequest.recognitionLevel = .accurate
+            textRequest.usesLanguageCorrection = true
+            textRequest.automaticallyDetectsLanguage = true
+            try handler.perform([barcodeRequest, textRequest])
+            let lines = (textRequest.results ?? []).compactMap { $0.topCandidates(1).first?.string }
+            let codes = (barcodeRequest.results ?? []).compactMap(\.payloadStringValue)
+            return (lines + codes).joined(separator: "\n")
+        }.value
+    }
+
     /// Recognizes text (or a QR code / barcode) and copies it to the clipboard with feedback.
     @MainActor
     static func recognizeAndCopy(_ image: CGImage) {
