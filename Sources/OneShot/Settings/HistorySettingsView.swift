@@ -34,6 +34,7 @@ struct HistorySettingsView: View {
                         .foregroundStyle(.secondary)
                 }
                 HStack {
+                    Button("Open History") { HistoryWindowController.shared.show() }
                     Button("Show in Finder") {
                         NSWorkspace.shared.activateFileViewerSelecting([HistoryService.shared.directory])
                     }

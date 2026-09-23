@@ -24,13 +24,14 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        for action in ShortcutAction.allCases {
+        for action in ShortcutAction.allCases where action.isCapture {
             addItem(action.title, shortcut: action) { [menuDelay] in action.perform(delay: menuDelay) }
         }
         menu.addItem(selfTimerItem())
 
         menu.addItem(.separator())
 
+        addItem("History…", shortcut: .openHistory) { HistoryWindowController.shared.show() }
         addItem("Background Tool for Clipboard Image") { BackgroundToolWindowController.shared.openClipboardImage() }
         addItem("Upload Image from Clipboard") { Uploader.shared.uploadClipboardImage() }
         addItem("Upload History…") { UploadHistoryWindowController.shared.show() }

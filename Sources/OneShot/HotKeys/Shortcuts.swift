@@ -12,6 +12,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case captureAreaWithTimer
     case captureFullscreenWithTimer
     case captureText
+    case openHistory
 
     var id: String { rawValue }
 
@@ -26,6 +27,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureAreaWithTimer: return "Capture Area with Timer"
         case .captureFullscreenWithTimer: return "Capture Fullscreen with Timer"
         case .captureText: return "Capture Text (OCR)"
+        case .openHistory: return "Open History"
         }
     }
 
@@ -38,6 +40,9 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Capture actions are listed together at the top of the menu bar menu.
+    var isCapture: Bool { self != .openHistory }
+
     var defaultHotKey: HotKey? {
         let commandShift = HotKey.command | HotKey.shift
         switch self {
@@ -47,7 +52,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.control)
         case .capturePreviousArea:
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.option)
-        case .captureWindow, .captureScrolling, .captureAreaWithTimer, .captureFullscreenWithTimer:
+        case .captureWindow, .captureScrolling, .captureAreaWithTimer, .captureFullscreenWithTimer, .openHistory:
             return nil
         case .captureFullscreen:
             return HotKey(keyCode: UInt32(kVK_ANSI_3), modifiers: commandShift)
@@ -69,6 +74,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureAreaWithTimer: service.captureArea(timer: Preferences.selfTimerSeconds, delay: delay)
         case .captureFullscreenWithTimer: service.captureFullscreen(timer: Preferences.selfTimerSeconds, delay: delay)
         case .captureText: service.captureArea(output: .text, delay: delay)
+        case .openHistory: HistoryWindowController.shared.show()
         }
     }
 }
