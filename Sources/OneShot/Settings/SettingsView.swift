@@ -4,12 +4,26 @@ import OneShotCore
 import ServiceManagement
 import SwiftUI
 
+enum SettingsTab: String {
+    case general
+    case capture
+    case shortcuts
+    case upload
+}
+
+@MainActor
+final class SettingsNavigation: ObservableObject {
+    static let shared = SettingsNavigation()
+    @Published var tab: SettingsTab = .general
+}
+
 @MainActor
 final class SettingsWindowController {
     static let shared = SettingsWindowController()
     private var window: NSWindow?
 
-    func show() {
+    func show(tab: SettingsTab? = nil) {
+        if let tab { SettingsNavigation.shared.tab = tab }
         if window == nil {
             let hosting = NSHostingController(rootView: SettingsView())
             let window = NSWindow(contentViewController: hosting)
@@ -25,16 +39,24 @@ final class SettingsWindowController {
 }
 
 struct SettingsView: View {
+    @ObservedObject private var navigation = SettingsNavigation.shared
+
     var body: some View {
-        TabView {
+        TabView(selection: $navigation.tab) {
             GeneralSettingsView()
                 .tabItem { Label("General", systemImage: "gearshape") }
+                .tag(SettingsTab.general)
             CaptureSettingsView()
                 .tabItem { Label("Capture", systemImage: "camera.viewfinder") }
+                .tag(SettingsTab.capture)
             ShortcutSettingsView()
                 .tabItem { Label("Shortcuts", systemImage: "keyboard") }
+                .tag(SettingsTab.shortcuts)
+            UploadSettingsView()
+                .tabItem { Label("Upload", systemImage: "icloud.and.arrow.up") }
+                .tag(SettingsTab.upload)
         }
-        .frame(width: 520)
+        .frame(width: 540)
         .fixedSize(horizontal: false, vertical: true)
     }
 }

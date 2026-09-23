@@ -7,7 +7,8 @@ enum Toast {
     private static var panel: NSPanel?
     private static var hideWork: DispatchWorkItem?
 
-    static func show(_ message: String, symbol: String = "checkmark.circle.fill") {
+    /// Shows `message` for `duration` seconds, replacing any toast that is on screen.
+    static func show(_ message: String, symbol: String = "checkmark.circle.fill", duration: TimeInterval = 1.6) {
         hideWork?.cancel()
         panel?.orderOut(nil)
 
@@ -44,7 +45,7 @@ enum Toast {
             }
         }
         hideWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration, execute: work)
     }
 }
 

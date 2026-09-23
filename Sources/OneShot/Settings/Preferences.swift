@@ -46,6 +46,9 @@ enum PrefKey {
     static let selfTimerSeconds = "selfTimerSeconds"
     static let hideDesktopIcons = "hideDesktopIcons"
     static let hideDesktopWidgets = "hideDesktopWidgets"
+    static let uploadAfterCapture = "uploadAfterCapture"
+    static let copyLinkAfterUpload = "copyLinkAfterUpload"
+    static let uploadFileNamePattern = "uploadFileNamePattern"
     static let playSound = "playSound"
     static let ocrKeepLineBreaks = "ocrKeepLineBreaks"
     static let didCompleteFirstLaunch = "didCompleteFirstLaunch"
@@ -73,6 +76,9 @@ enum Preferences {
             PrefKey.selfTimerSeconds: 5,
             PrefKey.hideDesktopIcons: false,
             PrefKey.hideDesktopWidgets: false,
+            PrefKey.uploadAfterCapture: false,
+            PrefKey.copyLinkAfterUpload: true,
+            PrefKey.uploadFileNamePattern: Preferences.defaultUploadFileNamePattern,
             PrefKey.playSound: true,
             PrefKey.ocrKeepLineBreaks: true,
             PrefKey.didCompleteFirstLaunch: false,
@@ -93,6 +99,15 @@ enum Preferences {
 
     static var hideDesktopIcons: Bool { defaults.bool(forKey: PrefKey.hideDesktopIcons) }
     static var hideDesktopWidgets: Bool { defaults.bool(forKey: PrefKey.hideDesktopWidgets) }
+
+    static var uploadAfterCapture: Bool { defaults.bool(forKey: PrefKey.uploadAfterCapture) }
+    static var copyLinkAfterUpload: Bool { defaults.bool(forKey: PrefKey.copyLinkAfterUpload) }
+
+    static let defaultUploadFileNamePattern = "{random:10}"
+
+    static var uploadFileNamePattern: String {
+        defaults.string(forKey: PrefKey.uploadFileNamePattern) ?? defaultUploadFileNamePattern
+    }
 
     static let selfTimerChoices = [3, 5, 10]
 
