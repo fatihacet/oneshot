@@ -63,7 +63,9 @@ final class RecordingController {
 
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         let ownApps = content.applications.filter { $0.processID == getpid() }
-        let pins = content.windows.filter { PinManager.shared.windowIDs.contains($0.windowID) }
+        let keptWindows = content.windows.filter {
+            PinManager.shared.windowIDs.contains($0.windowID) || ScreenCapturer.isOwnRegularWindow($0)
+        }
 
         let filter: SCContentFilter
         let pixelSize: CGSize
@@ -78,7 +80,7 @@ final class RecordingController {
                 throw CaptureError.displayNotFound
             }
             // Excluding the app (not just its current windows) also hides toasts shown while recording.
-            filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: pins)
+            filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: keptWindows)
             let isFullScreen = rect.size == snapshot.screen.frame.size
             sourceRect = isFullScreen ? nil : CGRect(
                 x: rect.minX, y: snapshot.screen.frame.height - rect.maxY, width: rect.width, height: rect.height

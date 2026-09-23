@@ -50,8 +50,8 @@ enum CaptureError: LocalizedError {
 
 enum ScreenCapturer {
     /// Captures every display (or only the given one) at native resolution.
-    /// OneShot's own windows are excluded, except for pinned screenshots; desktop icons and
-    /// widgets are excluded when the corresponding settings are on.
+    /// OneShot's capture UI is excluded, but its regular windows and pinned screenshots are kept;
+    /// desktop icons and widgets are excluded when the corresponding settings are on.
     static func snapshotDisplays(
         only displayID: CGDirectDisplayID? = nil,
         includingWindows includedWindowIDs: Set<CGWindowID> = []
@@ -81,6 +81,14 @@ enum ScreenCapturer {
 
     private static let finderBundleID = "com.apple.finder"
     private static let notificationCenterBundleID = "com.apple.notificationcenterui"
+    private static let normalWindowLevel = Int(CGWindowLevelForKey(.normalWindow))
+
+    /// Whether a window is one of OneShot's regular windows (History, Settings, the editors), which are
+    /// captured like any other app's. The rest of its UI (overlays, toasts, Quick Access, countdowns,
+    /// frames) floats above the normal level and is kept out of captures.
+    static func isOwnRegularWindow(_ window: SCWindow) -> Bool {
+        window.owningApplication?.processID == getpid() && window.windowLayer == normalWindowLevel
+    }
 
     static func windowsToExclude(from content: SCShareableContent, keeping keptWindowIDs: Set<CGWindowID>) -> [SCWindow] {
         let ownPID = getpid()
@@ -91,7 +99,7 @@ enum ScreenCapturer {
         return content.windows.filter { window in
             let app = window.owningApplication
             if app?.processID == ownPID {
-                return !keptWindowIDs.contains(window.windowID)
+                return !isOwnRegularWindow(window) && !keptWindowIDs.contains(window.windowID)
             }
             if hideIcons, app?.bundleIdentifier == finderBundleID, window.windowLayer == desktopIconLevel {
                 return true
@@ -152,17 +160,15 @@ enum ScreenCapturer {
         return (app.localizedName, title?.isEmpty == true ? nil : title)
     }
 
-    /// Normal application windows currently on screen, ordered front to back.
+    /// Normal application windows currently on screen, OneShot's own included, ordered front to back.
     static func onScreenWindows() -> [WindowInfo] {
         let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
         guard let list = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
             return []
         }
-        let ownPID = getpid()
         return list.compactMap { entry in
-            guard (entry[kCGWindowLayer as String] as? Int) == 0,
+            guard (entry[kCGWindowLayer as String] as? Int) == normalWindowLevel,
                   let number = entry[kCGWindowNumber as String] as? Int,
-                  (entry[kCGWindowOwnerPID as String] as? Int32) != ownPID,
                   (entry[kCGWindowAlpha as String] as? Double ?? 1) > 0,
                   let boundsDict = entry[kCGWindowBounds as String] as? NSDictionary,
                   let frame = CGRect(dictionaryRepresentation: boundsDict),
