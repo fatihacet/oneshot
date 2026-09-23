@@ -149,6 +149,7 @@ private struct CaptureSettingsView: View {
     @AppStorage(PrefKey.jpegQuality) private var jpegQuality = 0.9
     @AppStorage(PrefKey.downscaleRetina) private var downscaleRetina = false
     @AppStorage(PrefKey.windowShadow) private var windowShadow = true
+    @AppStorage(PrefKey.showCrosshair) private var showCrosshair = true
     @AppStorage(PrefKey.ocrKeepLineBreaks) private var ocrKeepLineBreaks = true
 
     var body: some View {
@@ -164,6 +165,9 @@ private struct CaptureSettingsView: View {
                     }
                 }
                 Toggle("Save Retina screenshots at 1x", isOn: $downscaleRetina)
+            }
+            Section("Area selection") {
+                Toggle("Show crosshair guides", isOn: $showCrosshair)
             }
             Section("Window capture") {
                 Toggle("Include window shadow", isOn: $windowShadow)

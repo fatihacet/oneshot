@@ -41,6 +41,7 @@ enum PrefKey {
     static let jpegQuality = "jpegQuality"
     static let downscaleRetina = "downscaleRetina"
     static let windowShadow = "windowShadow"
+    static let showCrosshair = "showCrosshair"
     static let playSound = "playSound"
     static let ocrKeepLineBreaks = "ocrKeepLineBreaks"
     static let didCompleteFirstLaunch = "didCompleteFirstLaunch"
@@ -64,6 +65,7 @@ enum Preferences {
             PrefKey.jpegQuality: 0.9,
             PrefKey.downscaleRetina: false,
             PrefKey.windowShadow: true,
+            PrefKey.showCrosshair: true,
             PrefKey.playSound: true,
             PrefKey.ocrKeepLineBreaks: true,
             PrefKey.didCompleteFirstLaunch: false,
@@ -80,6 +82,7 @@ enum Preferences {
     static var showQuickAccess: Bool { defaults.bool(forKey: PrefKey.showQuickAccess) }
     static var downscaleRetina: Bool { defaults.bool(forKey: PrefKey.downscaleRetina) }
     static var windowShadow: Bool { defaults.bool(forKey: PrefKey.windowShadow) }
+    static var showCrosshair: Bool { defaults.bool(forKey: PrefKey.showCrosshair) }
     static var playSound: Bool { defaults.bool(forKey: PrefKey.playSound) }
     static var ocrKeepLineBreaks: Bool { defaults.bool(forKey: PrefKey.ocrKeepLineBreaks) }
     static var jpegQuality: Double { defaults.double(forKey: PrefKey.jpegQuality) }

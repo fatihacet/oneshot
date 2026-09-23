@@ -179,6 +179,9 @@ final class SelectionOverlayView: NSView {
     private let imageLayer = CALayer()
     private let dimLayer = CAShapeLayer()
     private let highlightLayer = CAShapeLayer()
+    private let crosshairShadow = CAShapeLayer()
+    private let crosshairLine = CAShapeLayer()
+    private let showsCrosshair = Preferences.showCrosshair
     private let labelLayer = CALayer()
     private let labelText = CATextLayer()
     private let loupeLayer = CALayer()
@@ -225,6 +228,15 @@ final class SelectionOverlayView: NSView {
 
         highlightLayer.lineWidth = 1
         root.addSublayer(highlightLayer)
+
+        // A dark line under a light one keeps the guides visible on any background.
+        crosshairShadow.strokeColor = NSColor.black.withAlphaComponent(0.35).cgColor
+        crosshairShadow.lineWidth = 3
+        crosshairLine.strokeColor = NSColor.white.withAlphaComponent(0.85).cgColor
+        crosshairLine.lineWidth = 1
+        crosshairLine.lineDashPattern = [6, 4]
+        root.addSublayer(crosshairShadow)
+        root.addSublayer(crosshairLine)
 
         labelLayer.backgroundColor = NSColor.black.withAlphaComponent(0.75).cgColor
         labelLayer.cornerRadius = 4
@@ -439,8 +451,11 @@ final class SelectionOverlayView: NSView {
                 labelLayer.isHidden = true
             }
             updateLoupe()
+            updateCrosshair()
         case .window:
             loupeLayer.isHidden = true
+            crosshairShadow.path = nil
+            crosshairLine.path = nil
             if let target = hoveredWindow {
                 dim(except: target.rect)
                 highlightLayer.path = CGPath(rect: target.rect, transform: nil)
@@ -473,6 +488,24 @@ final class SelectionOverlayView: NSView {
         labelText.frame = CGRect(x: 0, y: 3, width: size.width, height: ceil(textSize.height))
         labelText.string = text
         labelLayer.isHidden = false
+    }
+
+    private func updateCrosshair() {
+        guard showsCrosshair, let pointer, moveAnchor == nil else {
+            crosshairShadow.path = nil
+            crosshairLine.path = nil
+            return
+        }
+        // Centered on the pixel column/row right of and above the pointer.
+        let x = pointer.x + 0.5
+        let y = pointer.y + 0.5
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: 0, y: y))
+        path.addLine(to: CGPoint(x: bounds.width, y: y))
+        path.move(to: CGPoint(x: x, y: 0))
+        path.addLine(to: CGPoint(x: x, y: bounds.height))
+        crosshairShadow.path = path
+        crosshairLine.path = path
     }
 
     private func updateLoupe() {

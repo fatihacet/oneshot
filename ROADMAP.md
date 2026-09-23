@@ -21,7 +21,7 @@ OneShot ships in small, usable milestones. Checked items are done.
 - [x] Settings window, launch at login
 
 ## Task List
-- [ ] Crosshair guide lines across the screen
+- [x] Crosshair guide lines across the screen
 - [ ] Self-timer (3/5/10 s)
 - [ ] Hide desktop icons during capture
 - [ ] App icon
