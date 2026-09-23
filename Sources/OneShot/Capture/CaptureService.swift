@@ -10,6 +10,8 @@ final class CaptureService {
         case image
         /// Copy to the clipboard only: no Quick Access preview, no file.
         case clipboardOnly
+        /// Upload and copy the link: no Quick Access preview, no file.
+        case upload
         /// Recognize text in the selection and copy it.
         case text
     }
@@ -150,6 +152,10 @@ final class CaptureService {
             ImageExporter.copyToClipboard(capture)
             HistoryRecorder.record(&capture, savedURL: nil)
             Toast.show("Copied to clipboard")
+        case .upload:
+            if Preferences.playSound { SoundPlayer.playCapture() }
+            HistoryRecorder.record(&capture, savedURL: nil)
+            Uploader.shared.upload(capture)
         case .image:
             if Preferences.playSound { SoundPlayer.playCapture() }
             if Preferences.copyToClipboard { ImageExporter.copyToClipboard(capture) }

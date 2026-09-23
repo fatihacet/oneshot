@@ -30,6 +30,7 @@ All shortcuts can be changed or cleared in **Settings › Shortcuts**.
 | --- | --- |
 | Capture Area (Space toggles window mode) | <kbd>⇧⌘4</kbd> |
 | Capture Area to Clipboard (copy only, no preview, no file) | <kbd>⌃⇧⌘4</kbd> |
+| Capture Area and Upload (copies the link, no preview, no file) | <kbd>⌥⌘4</kbd> |
 | Capture Previous Area | <kbd>⌥⇧⌘4</kbd> |
 | Capture Window | not set |
 | Capture Fullscreen | <kbd>⇧⌘3</kbd> |
@@ -56,7 +57,7 @@ oneshot pin-clipboard
 oneshot --help
 ```
 
-Commands: `capture-area`, `capture-area-to-clipboard`, `capture-previous-area`, `capture-window`, `capture-scrolling`, `capture-fullscreen`, `capture-area-with-timer`, `capture-fullscreen-with-timer`, `capture-text`, `record-video`, `record-gif`, `stop-recording`, `pin-clipboard`, `upload-clipboard`, `annotate-clipboard`, `background-clipboard`, `open-history`, `open-settings`, `setup`.
+Commands: `capture-area`, `capture-area-to-clipboard`, `capture-area-and-upload`, `capture-previous-area`, `capture-window`, `capture-scrolling`, `capture-fullscreen`, `capture-area-with-timer`, `capture-fullscreen-with-timer`, `capture-text`, `record-video`, `record-gif`, `stop-recording`, `pin-clipboard`, `upload-clipboard`, `annotate-clipboard`, `background-clipboard`, `open-history`, `open-settings`, `setup`.
 
 ## Requirements
 

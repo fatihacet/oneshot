@@ -5,6 +5,7 @@ import Carbon.HIToolbox
 enum ShortcutAction: String, CaseIterable, Identifiable {
     case captureArea
     case captureAreaToClipboard
+    case captureAreaAndUpload
     case capturePreviousArea
     case captureWindow
     case captureScrolling
@@ -22,6 +23,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         switch self {
         case .captureArea: return "Capture Area"
         case .captureAreaToClipboard: return "Capture Area to Clipboard"
+        case .captureAreaAndUpload: return "Capture Area and Upload"
         case .capturePreviousArea: return "Capture Previous Area"
         case .captureWindow: return "Capture Window"
         case .captureScrolling: return "Capture Scrolling Area"
@@ -38,6 +40,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     var subtitle: String? {
         switch self {
         case .captureAreaToClipboard: return "Copies only. No preview, no file."
+        case .captureAreaAndUpload: return "Uploads and copies the link. No preview, no file."
         case .captureAreaWithTimer: return "Select an area, then capture after the self-timer."
         case .captureScrolling: return "Select an area, then scroll to capture long pages."
         case .recordVideo, .recordGIF: return "Press again to stop. Return records the whole screen."
@@ -55,6 +58,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift)
         case .captureAreaToClipboard:
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.control)
+        case .captureAreaAndUpload:
+            return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: HotKey.command | HotKey.option)
         case .capturePreviousArea:
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.option)
         case .captureWindow, .captureScrolling, .captureAreaWithTimer, .captureFullscreenWithTimer, .openHistory,
@@ -73,6 +78,13 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         switch self {
         case .captureArea: service.captureArea(delay: delay)
         case .captureAreaToClipboard: service.captureArea(output: .clipboardOnly, delay: delay)
+        case .captureAreaAndUpload:
+            // Ask for setup before the selection rather than after the capture is taken.
+            guard UploadSettings.isConfigured else {
+                Uploader.showSetup()
+                return
+            }
+            service.captureArea(output: .upload, delay: delay)
         case .capturePreviousArea: service.capturePreviousArea(delay: delay)
         case .captureWindow: service.captureArea(startInWindowMode: true, delay: delay)
         case .captureScrolling: service.captureScrolling(delay: delay)

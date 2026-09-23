@@ -8,6 +8,7 @@ Usage: oneshot <command> [--timer <seconds>]
 Capture:
   capture-area                 Select an area (Space: window, Return: whole screen)
   capture-area-to-clipboard    Select an area and copy it, without preview or file
+  capture-area-and-upload      Select an area and upload it, copying the link
   capture-previous-area        Capture the last selected area again
   capture-window               Pick a window
   capture-scrolling            Capture a scrolling area

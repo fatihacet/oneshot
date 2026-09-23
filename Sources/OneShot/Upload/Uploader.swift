@@ -55,8 +55,7 @@ final class Uploader {
         do {
             client = try UploadSettings.client(for: configuration)
         } catch {
-            Toast.show("Set up uploads in Settings › Upload", symbol: "icloud.slash")
-            SettingsWindowController.shared.show(tab: .upload)
+            Self.showSetup()
             return nil
         }
 
@@ -88,6 +87,12 @@ final class Uploader {
             Toast.show("Upload failed: \(error.localizedDescription)", symbol: "exclamationmark.triangle.fill", duration: 4)
             return nil
         }
+    }
+
+    /// Points the user to the upload settings when no bucket is set up.
+    static func showSetup() {
+        Toast.show("Set up uploads in Settings › Upload", symbol: "icloud.slash")
+        SettingsWindowController.shared.show(tab: .upload)
     }
 
     /// Uploads and deletes a tiny object to verify credentials and permissions.
