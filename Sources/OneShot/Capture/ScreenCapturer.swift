@@ -49,21 +49,21 @@ enum CaptureError: LocalizedError {
 
 enum ScreenCapturer {
     /// Captures every display (or only the given one) at native resolution.
-    /// OneShot's own windows are excluded, except for pinned screenshots.
+    /// OneShot's own windows are excluded, except for pinned screenshots; desktop icons and
+    /// widgets are excluded when the corresponding settings are on.
     static func snapshotDisplays(
         only displayID: CGDirectDisplayID? = nil,
         includingWindows includedWindowIDs: Set<CGWindowID> = []
     ) async throws -> [DisplaySnapshot] {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-        let ownApps = content.applications.filter { $0.processID == getpid() }
-        let exceptions = content.windows.filter { includedWindowIDs.contains($0.windowID) }
+        let excludedWindows = windowsToExclude(from: content, keeping: includedWindowIDs)
 
         var snapshots: [DisplaySnapshot] = []
         for screen in NSScreen.screens {
             guard let id = screen.displayID, displayID == nil || displayID == id else { continue }
             guard let display = content.displays.first(where: { $0.displayID == id }) else { continue }
 
-            let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: exceptions)
+            let filter = SCContentFilter(display: display, excludingWindows: excludedWindows)
             let config = SCStreamConfiguration()
             let scale = screen.backingScaleFactor
             config.width = Int((screen.frame.width * scale).rounded())
@@ -76,6 +76,32 @@ enum ScreenCapturer {
         }
         if snapshots.isEmpty { throw CaptureError.displayNotFound }
         return snapshots
+    }
+
+    private static let finderBundleID = "com.apple.finder"
+    private static let notificationCenterBundleID = "com.apple.notificationcenterui"
+
+    static func windowsToExclude(from content: SCShareableContent, keeping keptWindowIDs: Set<CGWindowID>) -> [SCWindow] {
+        let ownPID = getpid()
+        let desktopIconLevel = Int(CGWindowLevelForKey(.desktopIconWindow))
+        let hideIcons = Preferences.hideDesktopIcons
+        let hideWidgets = Preferences.hideDesktopWidgets
+
+        return content.windows.filter { window in
+            let app = window.owningApplication
+            if app?.processID == ownPID {
+                return !keptWindowIDs.contains(window.windowID)
+            }
+            if hideIcons, app?.bundleIdentifier == finderBundleID, window.windowLayer == desktopIconLevel {
+                return true
+            }
+            // Desktop widgets live just above the icon level, below normal windows.
+            if hideWidgets, app?.bundleIdentifier == notificationCenterBundleID,
+               window.windowLayer > desktopIconLevel, window.windowLayer < 0 {
+                return true
+            }
+            return false
+        }
     }
 
     /// Captures a single window independently of what is covering it.

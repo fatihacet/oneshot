@@ -43,6 +43,8 @@ enum PrefKey {
     static let windowShadow = "windowShadow"
     static let showCrosshair = "showCrosshair"
     static let selfTimerSeconds = "selfTimerSeconds"
+    static let hideDesktopIcons = "hideDesktopIcons"
+    static let hideDesktopWidgets = "hideDesktopWidgets"
     static let playSound = "playSound"
     static let ocrKeepLineBreaks = "ocrKeepLineBreaks"
     static let didCompleteFirstLaunch = "didCompleteFirstLaunch"
@@ -68,6 +70,8 @@ enum Preferences {
             PrefKey.windowShadow: true,
             PrefKey.showCrosshair: true,
             PrefKey.selfTimerSeconds: 5,
+            PrefKey.hideDesktopIcons: false,
+            PrefKey.hideDesktopWidgets: false,
             PrefKey.playSound: true,
             PrefKey.ocrKeepLineBreaks: true,
             PrefKey.didCompleteFirstLaunch: false,
@@ -85,6 +89,9 @@ enum Preferences {
     static var downscaleRetina: Bool { defaults.bool(forKey: PrefKey.downscaleRetina) }
     static var windowShadow: Bool { defaults.bool(forKey: PrefKey.windowShadow) }
     static var showCrosshair: Bool { defaults.bool(forKey: PrefKey.showCrosshair) }
+
+    static var hideDesktopIcons: Bool { defaults.bool(forKey: PrefKey.hideDesktopIcons) }
+    static var hideDesktopWidgets: Bool { defaults.bool(forKey: PrefKey.hideDesktopWidgets) }
 
     static let selfTimerChoices = [3, 5, 10]
 

@@ -151,6 +151,8 @@ private struct CaptureSettingsView: View {
     @AppStorage(PrefKey.windowShadow) private var windowShadow = true
     @AppStorage(PrefKey.showCrosshair) private var showCrosshair = true
     @AppStorage(PrefKey.selfTimerSeconds) private var selfTimerSeconds = 5
+    @AppStorage(PrefKey.hideDesktopIcons) private var hideDesktopIcons = false
+    @AppStorage(PrefKey.hideDesktopWidgets) private var hideDesktopWidgets = false
     @AppStorage(PrefKey.ocrKeepLineBreaks) private var ocrKeepLineBreaks = true
 
     var body: some View {
@@ -172,6 +174,10 @@ private struct CaptureSettingsView: View {
                 Picker("Self-timer", selection: $selfTimerSeconds) {
                     ForEach(Preferences.selfTimerChoices, id: \.self) { Text("\($0) seconds").tag($0) }
                 }
+            }
+            Section("Desktop") {
+                Toggle("Hide desktop icons", isOn: $hideDesktopIcons)
+                Toggle("Hide desktop widgets", isOn: $hideDesktopWidgets)
             }
             Section("Window capture") {
                 Toggle("Include window shadow", isOn: $windowShadow)
