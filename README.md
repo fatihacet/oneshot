@@ -43,7 +43,7 @@ make cert      # once: creates a local self-signed signing identity (recommended
 make install   # builds build/OneShot.app, copies it to /Applications and launches it
 ```
 
-Other targets: `make build` (debug build), `make app` (bundle only), `make run`, `make clean`.
+Other targets: `make build` (debug build), `make test` (unit tests), `make app` (bundle only), `make run`, `make clean`.
 
 The app icon is drawn in code; regenerate it with `swift scripts/generate-icon.swift Resources/AppIcon.icns`.
 
@@ -60,6 +60,7 @@ To remove the certificate later: open Keychain Access, search for "OneShot Local
 ## Project layout
 
 ```
+Sources/OneShotCore/   Platform-independent logic with unit tests (Tests/OneShotCoreTests)
 Sources/OneShot/
   App/        App entry point, menu bar
   Capture/    ScreenCaptureKit capture, selection overlay, capture flows

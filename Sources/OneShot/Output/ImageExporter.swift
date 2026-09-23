@@ -1,5 +1,6 @@
 import AppKit
 import ImageIO
+import OneShotCore
 import UniformTypeIdentifiers
 
 /// A finished screenshot.

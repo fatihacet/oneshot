@@ -1,11 +1,11 @@
 import Foundation
 
 /// Builds screenshot file names from a user-defined pattern with `{placeholder}` tokens.
-enum FileNamePattern {
-    static let defaultPattern = "OneShot {date} at {time}"
+public enum FileNamePattern {
+    public static let defaultPattern = "OneShot {date} at {time}"
 
     /// Placeholders shown in Settings, with a short description.
-    static let placeholders: [(token: String, description: String)] = [
+    public static let placeholders: [(token: String, description: String)] = [
         ("{date}", "2026-09-22"),
         ("{time}", "23.01.05"),
         ("{year}", "2026"),
@@ -23,13 +23,19 @@ enum FileNamePattern {
         ("{height}", "Height in pixels"),
     ]
 
-    struct Context {
-        var date = Date()
-        var appName: String?
-        var pixelSize: CGSize?
+    public struct Context {
+        public var date: Date
+        public var appName: String?
+        public var pixelSize: CGSize?
+
+        public init(date: Date = Date(), appName: String? = nil, pixelSize: CGSize? = nil) {
+            self.date = date
+            self.appName = appName
+            self.pixelSize = pixelSize
+        }
     }
 
-    static func fileName(pattern: String, context: Context) -> String {
+    public static func fileName(pattern: String, context: Context) -> String {
         let pattern = pattern.trimmingCharacters(in: .whitespacesAndNewlines)
         var result = ""
         var index = pattern.startIndex

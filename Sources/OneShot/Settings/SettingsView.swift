@@ -1,5 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
+import OneShotCore
 import ServiceManagement
 import SwiftUI
 

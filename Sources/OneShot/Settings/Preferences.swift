@@ -1,4 +1,5 @@
 import AppKit
+import OneShotCore
 import UniformTypeIdentifiers
 
 enum ImageFormat: String, CaseIterable, Identifiable {

@@ -1,10 +1,13 @@
 APP := build/OneShot.app
 INSTALL_DIR ?= /Applications
 
-.PHONY: build app install run clean cert
+.PHONY: build test app install run clean cert
 
 build:
 	swift build
+
+test:
+	swift test
 
 app:
 	./scripts/build-app.sh
