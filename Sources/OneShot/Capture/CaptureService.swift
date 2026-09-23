@@ -63,6 +63,27 @@ final class CaptureService {
         }
     }
 
+    /// Select a region, then scroll its content to capture more than fits on screen.
+    func captureScrolling(delay: TimeInterval = 0) {
+        run(delay: delay) {
+            let appName = Self.frontmostAppName()
+            let snapshots = try await ScreenCapturer.snapshotDisplays(includingWindows: PinManager.shared.windowIDs)
+            let controller = SelectionOverlayController(
+                snapshots: snapshots, windows: [], initialMode: .area, allowsWindowMode: false
+            )
+            self.overlay = controller
+            let result = await controller.run()
+            self.overlay = nil
+            guard case .area(let snapshot, let rect) = result else { return }
+
+            let session = ScrollingCaptureSession(
+                screen: snapshot.screen, displayID: snapshot.displayID, rect: rect, scale: snapshot.scale
+            )
+            guard let image = await session.run() else { return }
+            self.deliver(Capture(image: image, scale: snapshot.scale, sourceRect: nil, appName: appName), output: .image)
+        }
+    }
+
     func capturePreviousArea(delay: TimeInterval = 0) {
         guard let last = Preferences.lastArea else {
             captureArea(delay: delay)

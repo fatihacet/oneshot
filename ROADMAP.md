@@ -32,9 +32,9 @@ OneShot ships in small, usable milestones. Checked items are done.
   - [x] Upload from Quick Access, pins, and as an automatic after-capture action
   - [x] Upload history with delete
   - [x] Credentials stored in the Keychain
-- [ ] M4: Scrolling capture
-  - [ ] Select an area, auto-scroll (or manual scroll) and stitch frames into one tall image
-  - [ ] Live preview of the stitched result, stop at any time
+- [x] M4: Scrolling capture
+  - [x] Select an area, auto-scroll (or manual scroll) and stitch frames into one tall image
+  - [x] Live preview of the stitched result, stop at any time
 - [ ] M5: Background tool
   - [ ] Backgrounds: gradients, solid colors, images
   - [ ] Padding, corner radius, shadow, alignment

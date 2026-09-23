@@ -7,6 +7,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case captureAreaToClipboard
     case capturePreviousArea
     case captureWindow
+    case captureScrolling
     case captureFullscreen
     case captureAreaWithTimer
     case captureFullscreenWithTimer
@@ -20,6 +21,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureAreaToClipboard: return "Capture Area to Clipboard"
         case .capturePreviousArea: return "Capture Previous Area"
         case .captureWindow: return "Capture Window"
+        case .captureScrolling: return "Capture Scrolling Area"
         case .captureFullscreen: return "Capture Fullscreen"
         case .captureAreaWithTimer: return "Capture Area with Timer"
         case .captureFullscreenWithTimer: return "Capture Fullscreen with Timer"
@@ -31,6 +33,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         switch self {
         case .captureAreaToClipboard: return "Copies only. No preview, no file."
         case .captureAreaWithTimer: return "Select an area, then capture after the self-timer."
+        case .captureScrolling: return "Select an area, then scroll to capture long pages."
         default: return nil
         }
     }
@@ -44,7 +47,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.control)
         case .capturePreviousArea:
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.option)
-        case .captureWindow, .captureAreaWithTimer, .captureFullscreenWithTimer:
+        case .captureWindow, .captureScrolling, .captureAreaWithTimer, .captureFullscreenWithTimer:
             return nil
         case .captureFullscreen:
             return HotKey(keyCode: UInt32(kVK_ANSI_3), modifiers: commandShift)
@@ -61,6 +64,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureAreaToClipboard: service.captureArea(output: .clipboardOnly, delay: delay)
         case .capturePreviousArea: service.capturePreviousArea(delay: delay)
         case .captureWindow: service.captureArea(startInWindowMode: true, delay: delay)
+        case .captureScrolling: service.captureScrolling(delay: delay)
         case .captureFullscreen: service.captureFullscreen(delay: delay)
         case .captureAreaWithTimer: service.captureArea(timer: Preferences.selfTimerSeconds, delay: delay)
         case .captureFullscreenWithTimer: service.captureFullscreen(timer: Preferences.selfTimerSeconds, delay: delay)

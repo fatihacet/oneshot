@@ -104,6 +104,23 @@ enum ScreenCapturer {
         }
     }
 
+    /// Captures part of a display. `sourceRect` is in points, relative to the display's top-left corner.
+    static func captureRegion(
+        display: SCDisplay,
+        excluding windows: [SCWindow],
+        sourceRect: CGRect,
+        scale: CGFloat
+    ) async throws -> CGImage {
+        let filter = SCContentFilter(display: display, excludingWindows: windows)
+        let config = SCStreamConfiguration()
+        config.sourceRect = sourceRect
+        config.width = Int((sourceRect.width * scale).rounded())
+        config.height = Int((sourceRect.height * scale).rounded())
+        config.showsCursor = false
+        config.captureResolution = .best
+        return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+    }
+
     /// Captures a single window independently of what is covering it.
     static func captureWindow(id: CGWindowID, includeShadow: Bool) async throws -> CGImage {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
