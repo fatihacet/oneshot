@@ -35,11 +35,11 @@ OneShot ships in small, usable milestones. Checked items are done.
 - [x] M4: Scrolling capture
   - [x] Select an area, auto-scroll (or manual scroll) and stitch frames into one tall image
   - [x] Live preview of the stitched result, stop at any time
-- [ ] M5: Background tool
-  - [ ] Backgrounds: gradients, solid colors, images
-  - [ ] Padding, corner radius, shadow, alignment
-  - [ ] Aspect ratio presets (16:9, 1:1, 4:3, social sizes)
-  - [ ] Saved custom presets
+- [x] M5: Background tool
+  - [x] Backgrounds: gradients, solid colors, images
+  - [x] Padding, corner radius, shadow, alignment
+  - [x] Aspect ratio presets (16:9, 1:1, 4:3, social sizes)
+  - [x] Saved custom presets
 - [ ] History and semantic search
   - [ ] Local history of every capture (SQLite + thumbnails, capture app/window metadata)
   - [ ] Background indexing: on-device OCR plus vision-model captions and tags

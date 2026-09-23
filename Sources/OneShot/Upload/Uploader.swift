@@ -33,13 +33,11 @@ final class Uploader {
 
     /// Uploads the image on the clipboard, if any.
     func uploadClipboardImage() {
-        guard let image = NSImage(pasteboard: .general),
-              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+        guard let capture = Capture.fromClipboard() else {
             Toast.show("No image on the clipboard", symbol: "doc.on.clipboard")
             return
         }
-        let scale = image.size.width > 0 ? CGFloat(cgImage.width) / image.size.width : 1
-        upload(Capture(image: cgImage, scale: max(scale, 1), sourceRect: nil))
+        upload(capture)
     }
 
     @discardableResult

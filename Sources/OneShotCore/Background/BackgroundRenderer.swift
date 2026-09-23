@@ -11,7 +11,7 @@ public enum BackgroundRenderer {
     }
 
     /// Canvas size and screenshot placement in pixels.
-    public static func layout(imageSize: CGSize, scale: CGFloat, style: BackgroundStyle) -> Layout {
+    public static func layout(imageSize: CGSize, scale: CGFloat, style: BackgroundDesign) -> Layout {
         let padding = max(0, style.padding) * scale
         var width = imageSize.width + 2 * padding
         var height = imageSize.height + 2 * padding
@@ -41,7 +41,7 @@ public enum BackgroundRenderer {
     public static func render(
         image: CGImage,
         scale: CGFloat,
-        style: BackgroundStyle,
+        style: BackgroundDesign,
         backgroundImage: CGImage? = nil
     ) -> CGImage? {
         let layout = layout(imageSize: CGSize(width: image.width, height: image.height), scale: scale, style: style)
@@ -79,7 +79,7 @@ public enum BackgroundRenderer {
     }
 
     private static func drawFill(
-        _ fill: BackgroundStyle.Fill, in rect: CGRect, context: CGContext, space: CGColorSpace, backgroundImage: CGImage?
+        _ fill: BackgroundDesign.Fill, in rect: CGRect, context: CGContext, space: CGColorSpace, backgroundImage: CGImage?
     ) {
         switch fill {
         case .none:

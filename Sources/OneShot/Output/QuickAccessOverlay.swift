@@ -60,6 +60,7 @@ final class QuickAccessManager {
             pin: { [weak self] in self?.pin(item) },
             copyText: { [weak self] in self?.copyText(item) },
             upload: { [weak self] in self?.upload(item) },
+            background: { [weak self] in self?.openBackgroundTool(item) },
             open: { [weak self] in self?.open(item) },
             close: { [weak self] in self?.close(item) }
         ))
@@ -163,6 +164,11 @@ final class QuickAccessManager {
         close(item)
     }
 
+    private func openBackgroundTool(_ item: QuickAccessItem) {
+        BackgroundToolWindowController.shared.open(item.capture)
+        close(item)
+    }
+
     private func open(_ item: QuickAccessItem) {
         guard let url = item.fileURL() else { return }
         NSWorkspace.shared.open(url)
@@ -180,6 +186,7 @@ struct QuickAccessActions {
     let pin: () -> Void
     let copyText: () -> Void
     let upload: () -> Void
+    let background: () -> Void
     let open: () -> Void
     let close: () -> Void
 }
@@ -223,6 +230,7 @@ private struct QuickAccessView: View {
                     Spacer()
                     HStack {
                         CornerButton(symbol: "text.viewfinder", help: "Copy text", action: actions.copyText)
+                        CornerButton(symbol: "rectangle.center.inset.filled", help: "Add background", action: actions.background)
                         Spacer()
                         CornerButton(symbol: "arrow.up.forward.app", help: "Open", action: actions.open)
                     }

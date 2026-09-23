@@ -84,7 +84,7 @@ public enum ContentAlignment: String, Codable, CaseIterable, Sendable {
 }
 
 /// Everything the background tool needs to render a screenshot onto a backdrop.
-public struct BackgroundStyle: Codable, Equatable, Sendable {
+public struct BackgroundDesign: Codable, Equatable, Sendable {
     public enum Fill: Codable, Equatable, Sendable {
         case none
         case solid(RGBAColor)

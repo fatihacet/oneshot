@@ -28,14 +28,14 @@ struct BackgroundRendererTests {
     }
 
     @Test func addsPaddingScaledToPixels() {
-        let style = BackgroundStyle(fill: .solid(red), padding: 10, cornerRadius: 0, shadowRadius: 0)
+        let style = BackgroundDesign(fill: .solid(red), padding: 10, cornerRadius: 0, shadowRadius: 0)
         let layout = BackgroundRenderer.layout(imageSize: CGSize(width: 100, height: 50), scale: 2, style: style)
         #expect(layout.canvasSize == CGSize(width: 140, height: 90))
         #expect(layout.contentRect == CGRect(x: 20, y: 20, width: 100, height: 50))
     }
 
     @Test func widensCanvasForAspectRatioAndAligns() {
-        var style = BackgroundStyle(fill: .solid(red), padding: 5, cornerRadius: 0, shadowRadius: 0)
+        var style = BackgroundDesign(fill: .solid(red), padding: 5, cornerRadius: 0, shadowRadius: 0)
         style.aspectRatio = AspectRatio(width: 2, height: 1)
         style.alignment = .leading
         let layout = BackgroundRenderer.layout(imageSize: CGSize(width: 10, height: 10), scale: 1, style: style)
@@ -48,7 +48,7 @@ struct BackgroundRendererTests {
     }
 
     @Test func tallRatioAddsHeight() {
-        var style = BackgroundStyle(fill: .none, padding: 0, cornerRadius: 0, shadowRadius: 0)
+        var style = BackgroundDesign(fill: .none, padding: 0, cornerRadius: 0, shadowRadius: 0)
         style.aspectRatio = AspectRatio(width: 1, height: 1)
         style.alignment = .top
         let layout = BackgroundRenderer.layout(imageSize: CGSize(width: 40, height: 10), scale: 1, style: style)
@@ -57,7 +57,7 @@ struct BackgroundRendererTests {
     }
 
     @Test func rendersBackgroundAndScreenshot() throws {
-        let style = BackgroundStyle(fill: .solid(red), padding: 5, cornerRadius: 0, shadowRadius: 0)
+        let style = BackgroundDesign(fill: .solid(red), padding: 5, cornerRadius: 0, shadowRadius: 0)
         let result = try #require(BackgroundRenderer.render(image: solidImage(width: 10, height: 10), scale: 1, style: style))
         #expect(result.width == 20 && result.height == 20)
         #expect(pixel(result, x: 1, y: 1) == [255, 0, 0, 255])
@@ -65,7 +65,7 @@ struct BackgroundRendererTests {
     }
 
     @Test func roundsScreenshotCorners() throws {
-        let style = BackgroundStyle(fill: .solid(red), padding: 0, cornerRadius: 10, shadowRadius: 0)
+        let style = BackgroundDesign(fill: .solid(red), padding: 0, cornerRadius: 10, shadowRadius: 0)
         let result = try #require(BackgroundRenderer.render(image: solidImage(width: 40, height: 40), scale: 1, style: style))
         // The very corner is background, the center is screenshot.
         #expect(pixel(result, x: 0, y: 0) == [255, 0, 0, 255])

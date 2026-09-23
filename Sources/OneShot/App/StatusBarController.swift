@@ -31,6 +31,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
 
+        addItem("Background Tool for Clipboard Image") { BackgroundToolWindowController.shared.openClipboardImage() }
         addItem("Upload Image from Clipboard") { Uploader.shared.uploadClipboardImage() }
         addItem("Upload History…") { UploadHistoryWindowController.shared.show() }
 

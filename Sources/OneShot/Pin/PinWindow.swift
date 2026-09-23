@@ -22,10 +22,8 @@ final class PinManager {
     /// Pins the image currently on the clipboard. Returns false if there is none.
     @discardableResult
     func pinFromClipboard() -> Bool {
-        guard let image = NSImage(pasteboard: .general),
-              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return false }
-        let scale = image.size.width > 0 ? CGFloat(cgImage.width) / image.size.width : 1
-        pin(Capture(image: cgImage, scale: max(scale, 1), sourceRect: nil))
+        guard let capture = Capture.fromClipboard() else { return false }
+        pin(capture)
         return true
     }
 
@@ -146,6 +144,10 @@ final class PinWindow: NSPanel {
                 Toast.show("Could not save: \(error.localizedDescription)", symbol: "exclamationmark.triangle.fill")
             }
         }
+    }
+
+    @objc func openBackgroundTool() {
+        MainActor.assumeIsolated { BackgroundToolWindowController.shared.open(capture) }
     }
 
     @objc func uploadImage() {
@@ -287,6 +289,7 @@ private final class PinContentView: NSView {
         add("Save", #selector(PinWindow.saveImage), key: "s")
         add("Copy Text", #selector(PinWindow.copyText))
         add("Upload", #selector(PinWindow.uploadImage))
+        add("Add Background…", #selector(PinWindow.openBackgroundTool))
         menu.addItem(.separator())
 
         let opacity = NSMenuItem(title: "Opacity", action: nil, keyEquivalent: "")
