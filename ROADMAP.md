@@ -25,13 +25,13 @@ OneShot ships in small, usable milestones. Checked items are done.
 - [x] Self-timer (3/5/10 s)
 - [x] Hide desktop icons during capture (and desktop widgets)
 - [x] App icon
-- [ ] M3: S3 upload
-  - [ ] Any S3-compatible provider (AWS, Cloudflare R2, MinIO, Backblaze B2): endpoint, bucket, region, key prefix
-  - [ ] Public or presigned URL copied to the clipboard after upload
-  - [ ] Custom domain / CDN base URL
-  - [ ] Upload from Quick Access, pins, and as an automatic after-capture action
-  - [ ] Upload history with delete
-  - [ ] Credentials stored in the Keychain
+- [x] M3: S3 upload
+  - [x] Any S3-compatible provider (AWS, Cloudflare R2, MinIO, Backblaze B2): endpoint, bucket, region, key prefix
+  - [x] Public or presigned URL copied to the clipboard after upload
+  - [x] Custom domain / CDN base URL
+  - [x] Upload from Quick Access, pins, and as an automatic after-capture action
+  - [x] Upload history with delete
+  - [x] Credentials stored in the Keychain
 - [ ] M4: Scrolling capture
   - [ ] Select an area, auto-scroll (or manual scroll) and stitch frames into one tall image
   - [ ] Live preview of the stitched result, stop at any time

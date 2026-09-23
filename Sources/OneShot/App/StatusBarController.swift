@@ -31,6 +31,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
 
+        addItem("Upload Image from Clipboard") { Uploader.shared.uploadClipboardImage() }
+        addItem("Upload History…") { UploadHistoryWindowController.shared.show() }
+
+        menu.addItem(.separator())
+
         addItem("Pin Image from Clipboard") {
             if !PinManager.shared.pinFromClipboard() {
                 Toast.show("No image on the clipboard", symbol: "doc.on.clipboard")

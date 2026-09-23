@@ -148,6 +148,10 @@ final class PinWindow: NSPanel {
         }
     }
 
+    @objc func uploadImage() {
+        MainActor.assumeIsolated { Uploader.shared.upload(capture) }
+    }
+
     @objc func copyText() {
         MainActor.assumeIsolated { TextRecognizer.recognizeAndCopy(capture.image) }
     }
@@ -282,6 +286,7 @@ private final class PinContentView: NSView {
         add("Copy", #selector(PinWindow.copyImage), key: "c")
         add("Save", #selector(PinWindow.saveImage), key: "s")
         add("Copy Text", #selector(PinWindow.copyText))
+        add("Upload", #selector(PinWindow.uploadImage))
         menu.addItem(.separator())
 
         let opacity = NSMenuItem(title: "Opacity", action: nil, keyEquivalent: "")

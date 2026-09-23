@@ -59,6 +59,7 @@ final class QuickAccessManager {
             save: { [weak self] in self?.save(item) },
             pin: { [weak self] in self?.pin(item) },
             copyText: { [weak self] in self?.copyText(item) },
+            upload: { [weak self] in self?.upload(item) },
             open: { [weak self] in self?.open(item) },
             close: { [weak self] in self?.close(item) }
         ))
@@ -157,6 +158,11 @@ final class QuickAccessManager {
         TextRecognizer.recognizeAndCopy(item.capture.image)
     }
 
+    private func upload(_ item: QuickAccessItem) {
+        Uploader.shared.upload(item.capture)
+        close(item)
+    }
+
     private func open(_ item: QuickAccessItem) {
         guard let url = item.fileURL() else { return }
         NSWorkspace.shared.open(url)
@@ -173,6 +179,7 @@ struct QuickAccessActions {
     let save: () -> Void
     let pin: () -> Void
     let copyText: () -> Void
+    let upload: () -> Void
     let open: () -> Void
     let close: () -> Void
 }
@@ -203,6 +210,9 @@ private struct QuickAccessView: View {
                 VStack(spacing: 8) {
                     PillButton(title: "Copy", action: actions.copy)
                     PillButton(title: item.savedURL == nil ? "Save" : "Show in Finder", action: actions.save)
+                    if UploadSettings.isConfigured {
+                        PillButton(title: "Upload", action: actions.upload)
+                    }
                 }
                 VStack {
                     HStack {

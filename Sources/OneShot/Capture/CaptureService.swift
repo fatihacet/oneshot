@@ -144,6 +144,10 @@ final class CaptureService {
                 }
             }
 
+            if Preferences.uploadAfterCapture, UploadSettings.isConfigured {
+                Uploader.shared.upload(capture)
+            }
+
             if Preferences.showQuickAccess {
                 QuickAccessManager.shared.show(capture, savedURL: savedURL)
             } else if Preferences.copyToClipboard {
