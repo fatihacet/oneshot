@@ -24,9 +24,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     private func showIdleIcon() {
         guard let button = statusItem.button else { return }
-        let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "OneShot")
-        image?.isTemplate = true
-        button.image = image
+        button.image = MenuBarIcon.image
         button.title = ""
         button.imagePosition = .imageOnly
         button.contentTintColor = nil
