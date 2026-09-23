@@ -54,7 +54,6 @@ enum PrefKey {
     static let indexingPaused = "indexingPaused"
     static let playSound = "playSound"
     static let ocrKeepLineBreaks = "ocrKeepLineBreaks"
-    static let didCompleteFirstLaunch = "didCompleteFirstLaunch"
     static let lastAreaDisplayID = "lastAreaDisplayID"
     static let lastAreaRect = "lastAreaRect"
 }
@@ -87,7 +86,6 @@ enum Preferences {
             PrefKey.indexingPaused: false,
             PrefKey.playSound: true,
             PrefKey.ocrKeepLineBreaks: true,
-            PrefKey.didCompleteFirstLaunch: false,
         ])
     }
 
@@ -147,11 +145,6 @@ enum Preferences {
             return URL(fileURLWithPath: (path as NSString).expandingTildeInPath, isDirectory: true)
         }
         set { defaults.set(newValue.path, forKey: PrefKey.saveDirectory) }
-    }
-
-    static var didCompleteFirstLaunch: Bool {
-        get { defaults.bool(forKey: PrefKey.didCompleteFirstLaunch) }
-        set { defaults.set(newValue, forKey: PrefKey.didCompleteFirstLaunch) }
     }
 
     /// The last area selection, used by "Capture Previous Area".

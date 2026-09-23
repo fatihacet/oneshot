@@ -14,36 +14,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             await HistoryIndexer.shared.wake()
         }
 
-        if !Preferences.didCompleteFirstLaunch {
-            Preferences.didCompleteFirstLaunch = true
-            runFirstLaunchSetup()
+        if !OnboardingWindowController.isCompleted {
+            OnboardingWindowController.shared.show()
         }
     }
 
     private func registerHotKeys() {
         ShortcutStore.shared.registerAll()
-    }
-
-    /// Minimal first-run setup until the full onboarding wizard lands.
-    private func runFirstLaunchSetup() {
-        if !Permissions.hasScreenRecording {
-            Permissions.requestScreenRecording()
-        }
-        guard SystemScreenshotShortcuts.anyEnabled else { return }
-
-        NSApp.activate(ignoringOtherApps: true)
-        let alert = NSAlert()
-        alert.messageText = "Use OneShot for ⇧⌘3 and ⇧⌘4?"
-        alert.informativeText = """
-        The built-in macOS screenshot shortcuts take priority over other apps. \
-        OneShot can disable them so ⇧⌘3 and ⇧⌘4 open OneShot instead. \
-        You can restore them any time in Settings › Shortcuts.
-        """
-        alert.addButton(withTitle: "Disable macOS Shortcuts")
-        alert.addButton(withTitle: "Not Now")
-        if alert.runModal() == .alertFirstButtonReturn {
-            SystemScreenshotShortcuts.setEnabled(false)
-        }
     }
 
     /// Accessory apps have no visible menu bar, but key equivalents in windows still route through it.

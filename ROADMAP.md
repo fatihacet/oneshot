@@ -48,12 +48,12 @@ OneShot ships in small, usable milestones. Checked items are done.
   - [x] Filters by date, app and window title
   - [x] Actions from results: copy, pin, reveal in Finder, upload
   - [x] Retention policy, pause/resume indexing
-- [ ] M7: Onboarding wizard
-  - [ ] Permissions (Screen Recording; Accessibility where needed)
-  - [ ] Save folder and default after-capture actions
-  - [ ] Shortcut setup, including taking over the macOS shortcuts
-  - [ ] Optional S3 setup with "Test connection"
-  - [ ] Optional LLM provider and API key (skippable; Ollama needs no key)
+- [x] M7: Onboarding wizard
+  - [x] Permissions (Screen Recording; Accessibility where needed)
+  - [x] Save folder and default after-capture actions
+  - [x] Shortcut setup, including taking over the macOS shortcuts
+  - [x] Optional S3 setup with "Test connection"
+  - [x] Optional LLM provider and API key (skippable; Ollama needs no key)
 - [ ] Annotation tools
 - [ ] Screen recording / GIF
 - [ ] URL scheme and CLI (`oneshot://capture-area`) for Raycast/Alfred

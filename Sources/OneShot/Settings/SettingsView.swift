@@ -295,7 +295,7 @@ private struct ShortcutSettingsView: View {
 }
 
 /// Click to record a new global shortcut for an action.
-private struct ShortcutRecorder: View {
+struct ShortcutRecorder: View {
     let action: ShortcutAction
     @ObservedObject private var store = ShortcutStore.shared
     @State private var isRecording = false

@@ -60,6 +60,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             NSWorkspace.shared.open(directory)
         }
         addItem("Settings…", key: ",") { SettingsWindowController.shared.show() }
+        addItem("Setup Assistant…") { OnboardingWindowController.shared.show() }
         menu.addItem(.separator())
         addItem("Quit OneShot", key: "q") { NSApp.terminate(nil) }
     }
