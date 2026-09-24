@@ -23,9 +23,10 @@ ditto "$BIN_DIR/Sparkle.framework" "$APP/Contents/Frameworks/Sparkle.framework"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 cp "$ROOT/Resources/oneshot" "$APP/Contents/Resources/oneshot"
 chmod +x "$APP/Contents/Resources/oneshot"
-if [[ -f "$ROOT/Resources/AppIcon.icns" ]]; then
-  cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
-fi
+# Compile the Icon Composer icon into Assets.car, plus an AppIcon.icns for macOS versions before 26.
+xcrun actool "$ROOT/Resources/AppIcon.icon" --compile "$APP/Contents/Resources" \
+  --platform macosx --target-device mac --minimum-deployment-target 14.0 --app-icon AppIcon \
+  --output-partial-info-plist "$ROOT/build/AppIcon-info.plist" --errors --warnings >/dev/null
 
 IDENTITY="${ONESHOT_SIGN_IDENTITY:-}"
 if [[ -z "$IDENTITY" ]] && security find-certificate -c "OneShot Local Signing" >/dev/null 2>&1; then

@@ -1,153 +1,103 @@
 #!/usr/bin/env swift
-// Renders the OneShot app icon and packs it into an .icns file.
-// Usage: swift scripts/generate-icon.swift Resources/AppIcon.icns
+// Draws the OneShot icon's artwork into the Icon Composer document at Resources/AppIcon.icon
+// and exports a PNG of the finished icon for the README.
+// Usage: swift scripts/generate-icon.swift
+//
+// Only the layer images are generated. The background, glass and shadow settings live in
+// Resources/AppIcon.icon/icon.json and can be tuned in Icon Composer.
+// scripts/build-app.sh compiles the document into the app with actool.
 
 import AppKit
 
-let output = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "Resources/AppIcon.icns"
+let document = "Resources/AppIcon.icon"
+let preview = "Resources/AppIcon.png"
+// Full-bleed canvas; the system masks it to the icon shape. Y grows downwards, as in SVG.
 let canvas: CGFloat = 1024
 
-/// A superellipse ("squircle") close to the macOS icon shape.
-func squircle(in rect: CGRect, exponent: CGFloat = 5) -> CGPath {
-    let path = CGMutablePath()
-    let a = rect.width / 2
-    let b = rect.height / 2
-    let steps = 720
-    for step in 0...steps {
-        let t = CGFloat(step) / CGFloat(steps) * 2 * .pi
-        let cosT = cos(t)
-        let sinT = sin(t)
-        let x = a * copysign(pow(abs(cosT), 2 / exponent), cosT)
-        let y = b * copysign(pow(abs(sinT), 2 / exponent), sinT)
-        let point = CGPoint(x: rect.midX + x, y: rect.midY + y)
-        step == 0 ? path.move(to: point) : path.addLine(to: point)
+func pathData(_ path: CGPath) -> String {
+    var data = ""
+    func point(_ p: CGPoint) -> String { String(format: "%.2f %.2f", p.x, p.y) }
+    path.applyWithBlock { element in
+        let points = element.pointee.points
+        switch element.pointee.type {
+        case .moveToPoint: data += "M\(point(points[0]))"
+        case .addLineToPoint: data += "L\(point(points[0]))"
+        case .addQuadCurveToPoint: data += "Q\(point(points[0])) \(point(points[1]))"
+        case .addCurveToPoint: data += "C\(point(points[0])) \(point(points[1])) \(point(points[2]))"
+        case .closeSubpath: data += "Z"
+        @unknown default: break
+        }
     }
-    path.closeSubpath()
-    return path
+    return data
 }
 
-func color(_ hex: UInt32, alpha: CGFloat = 1) -> CGColor {
-    CGColor(
-        srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
-        green: CGFloat((hex >> 8) & 0xFF) / 255,
-        blue: CGFloat(hex & 0xFF) / 255,
-        alpha: alpha
-    )
+/// Writes a layer as a single white filled path. Strokes are outlined first, since Icon Composer's
+/// glass treats every shape as a fill.
+func writeLayer(_ path: CGPath, named name: String) throws {
+    let svg = """
+    <svg xmlns="http://www.w3.org/2000/svg" width="\(Int(canvas))" height="\(Int(canvas))" viewBox="0 0 \(Int(canvas)) \(Int(canvas))">
+    <path d="\(pathData(path))" fill="#FFFFFF"/>
+    </svg>
+
+    """
+    try svg.write(toFile: "\(document)/Assets/\(name).svg", atomically: true, encoding: .utf8)
 }
 
-func renderIcon() -> CGImage {
-    let space = CGColorSpace(name: CGColorSpace.sRGB)!
-    let context = CGContext(
-        data: nil, width: Int(canvas), height: Int(canvas), bitsPerComponent: 8, bytesPerRow: 0,
-        space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-    )!
+try FileManager.default.createDirectory(atPath: "\(document)/Assets", withIntermediateDirectories: true)
 
-    // Body: the standard 824 pt icon grid inside the 1024 canvas.
-    let body = CGRect(x: 100, y: 100, width: 824, height: 824)
-    let shape = squircle(in: body)
+// Viewfinder corner brackets.
+let frame = CGRect(x: 0, y: 0, width: canvas, height: canvas).insetBy(dx: 236, dy: 236)
+let arm: CGFloat = 147
+let radius: CGFloat = 55
+let brackets = CGMutablePath()
+let corners: [(CGPoint, CGFloat, CGFloat)] = [
+    (CGPoint(x: frame.minX, y: frame.minY), 1, 1),
+    (CGPoint(x: frame.maxX, y: frame.minY), -1, 1),
+    (CGPoint(x: frame.minX, y: frame.maxY), 1, -1),
+    (CGPoint(x: frame.maxX, y: frame.maxY), -1, -1),
+]
+for (corner, dx, dy) in corners {
+    brackets.move(to: CGPoint(x: corner.x, y: corner.y + dy * arm))
+    brackets.addArc(tangent1End: corner, tangent2End: CGPoint(x: corner.x + dx * arm, y: corner.y), radius: radius)
+    brackets.addLine(to: CGPoint(x: corner.x + dx * arm, y: corner.y))
+}
+try writeLayer(brackets.copy(strokingWithWidth: 57, lineCap: .round, lineJoin: .round, miterLimit: 10), named: "viewfinder")
 
-    context.saveGState()
-    context.setShadow(offset: CGSize(width: 0, height: -12), blur: 28, color: color(0x000000, alpha: 0.35))
-    context.addPath(shape)
-    context.setFillColor(color(0x1B1F3B))
-    context.fillPath()
-    context.restoreGState()
+// The single "shot", shaped like a "1": a stem with rounded ends and a dot up and
+// to its left as the flag, a small gap apart.
+let dotSize: CGFloat = 119
+let stemWidth: CGFloat = 99
+let stemTop = CGPoint(x: canvas / 2 + 78, y: canvas / 2 - 137)
+let stemBottom = CGPoint(x: stemTop.x, y: canvas / 2 + 137)
+let flagDistance = (dotSize + stemWidth) / 2 + 42
+let flagAngle: CGFloat = 15 * .pi / 180
+let dot = CGPoint(x: stemTop.x - flagDistance * cos(flagAngle), y: stemTop.y + flagDistance * sin(flagAngle))
+let stem = CGMutablePath()
+stem.move(to: stemTop)
+stem.addLine(to: stemBottom)
+let one = CGMutablePath()
+one.addPath(stem.copy(strokingWithWidth: stemWidth, lineCap: .round, lineJoin: .round, miterLimit: 10))
+one.addEllipse(in: CGRect(x: dot.x - dotSize / 2, y: dot.y - dotSize / 2, width: dotSize, height: dotSize))
+try writeLayer(one, named: "one")
 
-    context.saveGState()
-    context.addPath(shape)
-    context.clip()
-    let gradient = CGGradient(
-        colorsSpace: space,
-        colors: [color(0x4F46E5), color(0x2563EB), color(0x06B6D4)] as CFArray,
-        locations: [0, 0.55, 1]
-    )!
-    context.drawLinearGradient(
-        gradient,
-        start: CGPoint(x: body.minX, y: body.maxY),
-        end: CGPoint(x: body.maxX, y: body.minY),
-        options: []
-    )
-    // Soft highlight on the upper half.
-    let highlight = CGGradient(
-        colorsSpace: space,
-        colors: [color(0xFFFFFF, alpha: 0.22), color(0xFFFFFF, alpha: 0)] as CFArray,
-        locations: [0, 1]
-    )!
-    context.drawLinearGradient(
-        highlight,
-        start: CGPoint(x: body.midX, y: body.maxY),
-        end: CGPoint(x: body.midX, y: body.midY),
-        options: []
-    )
-    context.restoreGState()
-
-    // Viewfinder corner brackets.
-    let frame = body.insetBy(dx: 190, dy: 190)
-    let arm: CGFloat = 118
-    let radius: CGFloat = 44
-    context.setStrokeColor(color(0xFFFFFF))
-    context.setLineWidth(46)
-    context.setLineCap(.round)
-    context.setLineJoin(.round)
-    let corners: [(CGPoint, CGFloat, CGFloat)] = [
-        (CGPoint(x: frame.minX, y: frame.maxY), 1, -1),
-        (CGPoint(x: frame.maxX, y: frame.maxY), -1, -1),
-        (CGPoint(x: frame.minX, y: frame.minY), 1, 1),
-        (CGPoint(x: frame.maxX, y: frame.minY), -1, 1),
-    ]
-    for (corner, dx, dy) in corners {
-        let path = CGMutablePath()
-        path.move(to: CGPoint(x: corner.x, y: corner.y + dy * arm))
-        path.addArc(
-            tangent1End: corner,
-            tangent2End: CGPoint(x: corner.x + dx * arm, y: corner.y),
-            radius: radius
-        )
-        path.addLine(to: CGPoint(x: corner.x + dx * arm, y: corner.y))
-        context.addPath(path)
-        context.strokePath()
-    }
-
-    // The single "shot": a solid dot with a soft glow.
-    let center = CGPoint(x: body.midX, y: body.midY)
-    context.saveGState()
-    context.setShadow(offset: .zero, blur: 40, color: color(0xFFFFFF, alpha: 0.55))
-    context.setFillColor(color(0xFFFFFF))
-    context.fillEllipse(in: CGRect(x: center.x - 70, y: center.y - 70, width: 140, height: 140))
-    context.restoreGState()
-
-    return context.makeImage()!
+// Export the finished icon with Icon Composer's command line tool.
+func run(_ tool: String, _ arguments: [String]) throws -> String {
+    let process = Process()
+    let output = Pipe()
+    process.executableURL = URL(fileURLWithPath: tool)
+    process.arguments = arguments
+    process.standardOutput = output
+    try process.run()
+    let data = output.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
+    guard process.terminationStatus == 0 else { fatalError("\(tool) failed") }
+    return String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
 }
 
-func writePNG(_ image: CGImage, size: Int, to url: URL) {
-    let context = CGContext(
-        data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
-        space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-    )!
-    context.interpolationQuality = .high
-    context.draw(image, in: CGRect(x: 0, y: 0, width: size, height: size))
-    let destination = CGImageDestinationCreateWithURL(url as CFURL, "public.png" as CFString, 1, nil)!
-    CGImageDestinationAddImage(destination, context.makeImage()!, nil)
-    CGImageDestinationFinalize(destination)
-}
-
-let icon = renderIcon()
-let iconset = FileManager.default.temporaryDirectory.appendingPathComponent("OneShot-\(UUID().uuidString).iconset")
-try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
-for base in [16, 32, 128, 256, 512] {
-    writePNG(icon, size: base, to: iconset.appendingPathComponent("icon_\(base)x\(base).png"))
-    writePNG(icon, size: base * 2, to: iconset.appendingPathComponent("icon_\(base)x\(base)@2x.png"))
-}
-
-let process = Process()
-process.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
-process.arguments = ["-c", "icns", iconset.path, "-o", output]
-try process.run()
-process.waitUntilExit()
-try? FileManager.default.removeItem(at: iconset)
-guard process.terminationStatus == 0 else { fatalError("iconutil failed") }
-
-// Also keep a 1024 px PNG for the README.
-let preview = URL(fileURLWithPath: output).deletingPathExtension().appendingPathExtension("png")
-writePNG(icon, size: 1024, to: preview)
-print("Wrote \(output) and \(preview.path)")
+let developer = try run("/usr/bin/xcode-select", ["-p"])
+let ictool = "\(developer)/../Applications/Icon Composer.app/Contents/Executables/ictool"
+_ = try run(ictool, [
+    document, "--export-image", "--output-file", preview, "--platform", "macOS",
+    "--rendition", "Default", "--width", "1024", "--height", "1024", "--scale", "1",
+])
+print("Wrote \(document) and \(preview)")

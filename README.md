@@ -62,7 +62,7 @@ Commands: `capture-area`, `capture-area-to-clipboard`, `capture-area-and-upload`
 ## Requirements
 
 - macOS 14 Sonoma or later
-- Xcode 16 or later (Swift 6 toolchain)
+- Xcode 26 or later (Swift 6 toolchain; compiles the Icon Composer app icon)
 
 ## Building
 
@@ -73,7 +73,7 @@ make install   # builds build/OneShot.app, copies it to /Applications and launch
 
 Other targets: `make build` (debug build), `make test` (unit tests), `make app` (bundle only), `make run`, `make clean`.
 
-The app icon is drawn in code; regenerate it with `swift scripts/generate-icon.swift Resources/AppIcon.icns`.
+The app icon is an Icon Composer document, `Resources/AppIcon.icon`. Its artwork is drawn in code; regenerate it and the README preview with `swift scripts/generate-icon.swift`. Background, glass and shadow settings live in its `icon.json` and can be tuned in Icon Composer.
 
 ### Releases and updates
 

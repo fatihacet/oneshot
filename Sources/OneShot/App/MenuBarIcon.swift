@@ -1,6 +1,6 @@
 import AppKit
 
-/// The menu bar version of the app icon: viewfinder brackets around a single dot.
+/// The menu bar version of the app icon: viewfinder brackets around a "1" made of a stem and a dot.
 /// Drawn as a template image so macOS tints it for light, dark and highlighted menu bars.
 enum MenuBarIcon {
     static let image: NSImage = {
@@ -32,9 +32,22 @@ enum MenuBarIcon {
             NSColor.black.setStroke()
             path.stroke()
 
-            let dot: CGFloat = 4.4
+            // The "1": a rounded stem with a dot up and to its left, a small gap apart.
+            let dotSize: CGFloat = 3
+            let stemWidth: CGFloat = 2.5
+            let stemTop = NSPoint(x: rect.midX + 2.25, y: rect.midY + 3.45)
+            let stem = NSBezierPath()
+            stem.lineWidth = stemWidth
+            stem.lineCapStyle = .round
+            stem.move(to: stemTop)
+            stem.line(to: NSPoint(x: stemTop.x, y: rect.midY - 3.45))
+            stem.stroke()
+
+            let flagDistance = (dotSize + stemWidth) / 2 + 1.2
+            let flagAngle: CGFloat = 15 * .pi / 180
+            let dot = NSPoint(x: stemTop.x - flagDistance * cos(flagAngle), y: stemTop.y - flagDistance * sin(flagAngle))
             NSColor.black.setFill()
-            NSBezierPath(ovalIn: NSRect(x: rect.midX - dot / 2, y: rect.midY - dot / 2, width: dot, height: dot)).fill()
+            NSBezierPath(ovalIn: NSRect(x: dot.x - dotSize / 2, y: dot.y - dotSize / 2, width: dotSize, height: dotSize)).fill()
             return true
         }
         image.isTemplate = true
