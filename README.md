@@ -104,7 +104,9 @@ The CI workflow runs the tests and builds the app on every push to `main` and on
 
 ### Why the local signing certificate?
 
-macOS ties the Screen Recording permission to the app's code signature. Ad-hoc signed builds get a new signature on every build, so macOS would ask for permission again after each rebuild. `make cert` creates a self-signed identity named `OneShot Local Signing` in your login keychain; `scripts/build-app.sh` uses it automatically. To use your own identity set `ONESHOT_SIGN_IDENTITY`.
+macOS ties the Screen Recording permission to the app's code signature. Ad-hoc signed builds get a new signature on every build, so macOS would ask for permission again after each rebuild. `make cert` creates a self-signed identity named `OneShot Local Signing` in your login keychain; `scripts/build-app.sh` uses it automatically. If the `OneShot Release Signing` identity that releases are signed with is in the keychain, it is preferred, so local builds and installed releases share one set of permissions. To use your own identity set `ONESHOT_SIGN_IDENTITY`.
+
+Switching a build to a different identity leaves System Settings showing OneShot as allowed while macOS refuses the new signature. Reset the stale entries with `tccutil reset All dev.oneshot.OneShot`, relaunch, and grant the permissions again.
 
 To remove the certificate later: open Keychain Access, search for "OneShot Local Signing", and delete the certificate and its private key.
 

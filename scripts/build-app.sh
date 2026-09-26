@@ -3,8 +3,11 @@
 #
 # Signing identity, in order of preference:
 #   1. $ONESHOT_SIGN_IDENTITY
-#   2. "OneShot Local Signing" (created by scripts/create-dev-cert.sh)
-#   3. ad-hoc ("-"); macOS will ask for Screen Recording permission again after each rebuild.
+#   2. "OneShot Release Signing", the identity published releases are signed with, if it is in the
+#      keychain. macOS ties privacy permissions (Screen Recording, Microphone, Camera) to the signing
+#      certificate, so signing local builds the same way lets them share one grant with releases.
+#   3. "OneShot Local Signing" (created by scripts/create-dev-cert.sh)
+#   4. ad-hoc ("-"); macOS will ask for Screen Recording permission again after each rebuild.
 #
 # Version: $ONESHOT_VERSION (set from the tag by the release workflow) overrides the version in
 # Resources/Info.plist. The build number is the commit count, so a build is never older than the
@@ -39,9 +42,11 @@ xcrun actool "$ROOT/Resources/AppIcon.icon" --compile "$APP/Contents/Resources" 
   --output-partial-info-plist "$ROOT/build/AppIcon-info.plist" --errors --warnings >/dev/null
 
 IDENTITY="${ONESHOT_SIGN_IDENTITY:-}"
-if [[ -z "$IDENTITY" ]] && security find-certificate -c "OneShot Local Signing" >/dev/null 2>&1; then
-  IDENTITY="OneShot Local Signing"
-fi
+for candidate in "OneShot Release Signing" "OneShot Local Signing"; do
+  if [[ -z "$IDENTITY" ]] && security find-certificate -c "$candidate" >/dev/null 2>&1; then
+    IDENTITY="$candidate"
+  fi
+done
 IDENTITY="${IDENTITY:--}"
 
 # Sign nested code inside-out (no --deep), as recommended by Sparkle.
