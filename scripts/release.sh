@@ -15,6 +15,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# Keep the private key out of the environment of the build and everything it runs;
+# only generate_appcast receives it, on stdin.
+SPARKLE_KEY="${SPARKLE_PRIVATE_KEY:-}"
+unset SPARKLE_PRIVATE_KEY
+
 REPO="${ONESHOT_GITHUB_REPO:-fatihacet/oneshot}"
 VERSION="${ONESHOT_VERSION:-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)}"
 RELEASES="$ROOT/build/releases"
@@ -42,8 +47,8 @@ APPCAST_ARGS=(
   --link "https://github.com/$REPO"
   --full-release-notes-url "https://github.com/$REPO/releases"
 )
-if [[ -n "${SPARKLE_PRIVATE_KEY:-}" ]]; then
-  printf '%s' "$SPARKLE_PRIVATE_KEY" | "$SPARKLE_BIN/generate_appcast" --ed-key-file - "${APPCAST_ARGS[@]}" "$RELEASES"
+if [[ -n "$SPARKLE_KEY" ]]; then
+  printf '%s' "$SPARKLE_KEY" | "$SPARKLE_BIN/generate_appcast" --ed-key-file - "${APPCAST_ARGS[@]}" "$RELEASES"
 else
   "$SPARKLE_BIN/generate_appcast" "${APPCAST_ARGS[@]}" "$RELEASES"
 fi

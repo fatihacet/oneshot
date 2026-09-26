@@ -20,7 +20,8 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
+      # Pinned to a commit: this job holds the signing secrets.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # The build number is the commit count.
           fetch-depth: 0
@@ -44,16 +45,8 @@ jobs:
           xcodebuild -version
           swift --version
 
-      - name: Cache Swift packages
-        uses: actions/cache@v6
-        with:
-          path: |
-            .build/artifacts
-            .build/checkouts
-            .build/repositories
-          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
-          restore-keys: spm-${{ runner.os }}-
-
+      # No package cache here: Sparkle's tools come from .build/artifacts and receive the private
+      # key, so they are downloaded fresh (and checksum-verified by SwiftPM) for every release.
       - name: Run tests
         run: swift test
 
