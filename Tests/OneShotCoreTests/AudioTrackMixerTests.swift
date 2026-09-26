@@ -45,10 +45,8 @@ struct AudioTrackMixerTests {
         let framesPerChunk = sampleRate / chunksPerSecond
         for chunk in 0..<(seconds * chunksPerSecond) {
             let start = chunk * framesPerChunk
-            let mono = (0..<framesPerChunk).map { Float(0.3 * sin(2 * .pi * 440 * Double(start + $0) / Double(sampleRate))) }
-            let leftOnly = (0..<framesPerChunk).flatMap {
-                [Float(0.3 * sin(2 * .pi * 1000 * Double(start + $0) / Double(sampleRate))), 0]
-            }
+            let mono = (0..<framesPerChunk).map { tone(440, frame: start + $0) }
+            let leftOnly = (0..<framesPerChunk).flatMap { [tone(1000, frame: start + $0), 0] }
             try await append(makeAudioBuffer(mono, channels: 1, startFrame: start), to: microphone)
             try await append(makeAudioBuffer(leftOnly, channels: 2, startFrame: start), to: system)
 
@@ -63,6 +61,12 @@ struct AudioTrackMixerTests {
         await writer.finishWriting()
         #expect(writer.status == .completed)
         return url
+    }
+
+    /// A sample of a sine wave at 30% of full scale.
+    private func tone(_ frequency: Double, frame: Int) -> Float {
+        let time = Double(frame) / Double(sampleRate)
+        return Float(0.3 * sin(2 * Double.pi * frequency * time))
     }
 
     private func append(_ buffer: CMSampleBuffer, to input: AVAssetWriterInput) async throws {
