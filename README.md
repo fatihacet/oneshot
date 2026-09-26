@@ -59,6 +59,10 @@ oneshot --help
 
 Commands: `capture-area`, `capture-area-to-clipboard`, `capture-area-and-upload`, `capture-previous-area`, `capture-window`, `capture-scrolling`, `capture-fullscreen`, `capture-area-with-timer`, `capture-fullscreen-with-timer`, `capture-text`, `record-video`, `record-gif`, `stop-recording`, `pin-clipboard`, `upload-clipboard`, `annotate-clipboard`, `background-clipboard`, `open-history`, `open-settings`, `setup`.
 
+## Install
+
+Download `OneShot-<version>.zip` from the [latest release](https://github.com/fatihacet/oneshot/releases/latest), unzip it and move OneShot to Applications. Releases are not notarized: on first launch macOS blocks the app, so open System Settings › Privacy & Security and click **Open Anyway**. OneShot then keeps itself up to date.
+
 ## Requirements
 
 - macOS 14 Sonoma or later
@@ -77,7 +81,26 @@ The app icon is an Icon Composer document, `Resources/AppIcon.icon`. Its artwork
 
 ### Releases and updates
 
-OneShot updates itself with [Sparkle](https://sparkle-project.org). `scripts/release.sh` builds a zip and an EdDSA-signed `appcast.xml` in `build/releases`; attach both to a GitHub release tagged `v<version>`. The feed URL (`SUFeedURL`) and public key (`SUPublicEDKey`) live in `Resources/Info.plist`. Forks must generate their own key with `.build/artifacts/sparkle/Sparkle/bin/generate_keys` and update both values.
+OneShot updates itself with [Sparkle](https://sparkle-project.org). The feed URL (`SUFeedURL`) and public key (`SUPublicEDKey`) live in `Resources/Info.plist`.
+
+To publish a release, push a version tag. The message of an annotated tag becomes the release notes on GitHub and in the update dialog:
+
+```sh
+git tag -a v0.2.0 -m "What changed"
+git push origin v0.2.0
+```
+
+The Release workflow runs the tests, builds the app with the tag's version (the build number is the commit count), signs it, writes an EdDSA-signed `appcast.xml`, and publishes both with the zip as a GitHub release. It needs three repository secrets:
+
+| Secret | Contents |
+| --- | --- |
+| `SPARKLE_PRIVATE_KEY` | Sparkle's private EdDSA key, exported with `generate_keys -x <file>` |
+| `MACOS_SIGNING_CERTIFICATE` | Base64 of a `.p12` with the `OneShot Release Signing` identity |
+| `MACOS_SIGNING_CERTIFICATE_PASSWORD` | The `.p12` password |
+
+The release identity is self-signed, like the local one. Keeping it the same across releases keeps the Screen Recording permission after updates. Releases are not notarized, so the first launch of a downloaded copy needs **Open Anyway** in System Settings › Privacy & Security. `scripts/release.sh` produces the same files in `build/releases` locally without publishing them. Forks must generate their own Sparkle key with `.build/artifacts/sparkle/Sparkle/bin/generate_keys`, update both Info.plist values and set their own secrets.
+
+The CI workflow runs the tests and builds the app on every push to `main` and on pull requests.
 
 ### Why the local signing certificate?
 
