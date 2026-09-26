@@ -366,14 +366,17 @@ struct ShortcutRecorder: View {
                     .foregroundStyle(isRecording || store.hotKey(for: action) == nil ? .secondary : .primary)
                     .frame(minWidth: 120)
             }
-            if store.hotKey(for: action) != nil, !isRecording {
-                Button(action: { store.set(nil, for: action) }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.borderless)
-                .help("Clear shortcut")
+            // Always laid out, and only hidden, so every recorder lines up whether or not it can be cleared.
+            let canClear = store.hotKey(for: action) != nil && !isRecording
+            Button(action: { store.set(nil, for: action) }) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.secondary)
             }
+            .buttonStyle(.borderless)
+            .help("Clear shortcut")
+            .opacity(canClear ? 1 : 0)
+            .disabled(!canClear)
+            .accessibilityHidden(!canClear)
         }
         .onDisappear(perform: stopRecording)
     }
