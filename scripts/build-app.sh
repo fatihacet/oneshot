@@ -9,15 +9,20 @@
 #   3. "OneShot Local Signing" (created by scripts/create-dev-cert.sh)
 #   4. ad-hoc ("-"); macOS will ask for Screen Recording permission again after each rebuild.
 #
-# Version: $ONESHOT_VERSION (set from the tag by the release workflow) overrides the version in
-# Resources/Info.plist. The build number is the commit count, so a build is never older than the
-# releases before it and Sparkle does not offer a local build an older release as an update.
+# Version: $ONESHOT_VERSION, set from the tag by the release workflow. Other builds describe
+# themselves relative to the latest release tag, e.g. 0.2.0-3-g54b1d52 for three commits after
+# v0.2.0 (with -dirty for uncommitted changes), falling back to Resources/Info.plist without tags.
+# The build number is the commit count, so a build is never older than the releases before it
+# and Sparkle does not offer a local build an older release as an update.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIGURATION="${CONFIGURATION:-release}"
 APP="$ROOT/build/OneShot.app"
 VERSION="${ONESHOT_VERSION:-}"
+if [[ -z "$VERSION" ]]; then
+  VERSION="$(git -C "$ROOT" describe --tags --match 'v[0-9]*' --dirty 2>/dev/null | sed 's/^v//')" || true
+fi
 BUILD_NUMBER="${ONESHOT_BUILD:-$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || echo 1)}"
 
 cd "$ROOT"
