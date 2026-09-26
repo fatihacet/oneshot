@@ -9,7 +9,7 @@ A fast, open-source screenshot tool for macOS, inspired by CleanShot X. Lives in
 - **Area capture** with a frozen screen, magnifier loupe and live size label
 - **Window capture**: press <kbd>Space</kbd> during area selection, click a window (optional shadow)
 - **Fullscreen** and **previous area** capture, **self-timer**
-- **Screen recording**: record an area, a window or the whole screen (press Return) to MP4 with optional system audio, or straight to an animated GIF; stop from the menu bar
+- **Screen recording**: a Loom-style panel to pick full screen (any display), a window or an area, the resolution (720p to 4K or original, with a live file size estimate), camera, microphone and system audio. Records compact HEVC or H.264 MP4 (a 1080p recording is about 25 MB per minute), mixes voice and system audio into one track, and can show your camera in a round, draggable bubble that is recorded with the screen. GIF recording goes straight to area selection; stop either from the menu bar
 - **Scrolling capture**: scroll manually or let OneShot auto-scroll; frames are stitched live with sticky headers and footers kept once
 - **Copy to clipboard** (including a copy-only shortcut that skips the preview) and/or **save to a folder** (PNG or JPEG, Retina-aware DPI, optional 1x)
 - **Quick Access overlay**: thumbnail after each capture with Copy, Save, Pin, Copy Text, Open, and drag & drop into any app
@@ -88,6 +88,7 @@ To remove the certificate later: open Keychain Access, search for "OneShot Local
 ## Permissions
 
 - **Screen & System Audio Recording**: required for every capture. Grant it in System Settings › Privacy & Security, then relaunch OneShot.
+- **Microphone** and **Camera** (optional): asked for the first time you pick them in the recording panel.
 - **Accessibility** (optional): only needed for auto-scroll in scrolling capture.
 
 ## Project layout
@@ -99,6 +100,7 @@ Sources/OneShot/
   Capture/    ScreenCaptureKit capture, selection overlay, capture flows
   Output/     Encoding, clipboard, saving, Quick Access overlay, toasts
   Pin/        Pinned screenshot windows
+  Recording/  Screen recording, recording panel, camera bubble, microphone capture
   OCR/        Vision text and barcode recognition
   HotKeys/    Global hotkeys, macOS screenshot shortcut toggling
   Settings/   Preferences and settings window

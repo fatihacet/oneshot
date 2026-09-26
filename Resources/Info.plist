@@ -43,6 +43,10 @@
     <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NSCameraUsageDescription</key>
+    <string>OneShot shows your camera in a bubble while you record your screen.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>OneShot records your voice with your screen recordings.</string>
     <key>SUFeedURL</key>
     <string>https://github.com/fatihacet/oneshot/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key>

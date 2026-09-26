@@ -43,7 +43,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureAreaAndUpload: return "Uploads and copies the link. No preview, no file."
         case .captureAreaWithTimer: return "Select an area, then capture after the self-timer."
         case .captureScrolling: return "Select an area, then scroll to capture long pages."
-        case .recordVideo, .recordGIF: return "Press again to stop. Return records the whole screen."
+        case .recordVideo: return "Opens the recording panel. Press again to stop."
+        case .recordGIF: return "Press again to stop. Return records the whole screen."
         default: return nil
         }
     }

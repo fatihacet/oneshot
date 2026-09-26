@@ -56,5 +56,10 @@ OneShot ships in small, usable milestones. Checked items are done.
   - [x] Optional LLM provider and API key (skippable; Ollama needs no key)
 - [x] Annotation tools (arrow, line, rectangle, ellipse, pen, highlighter, text, counter, pixelate, crop)
 - [x] Screen recording / GIF (area, window or full screen; system audio; countdown)
+- [x] Loom-style recording
+  - [x] Recording panel: full screen (display picker), window or area; resolution presets with a size estimate
+  - [x] HEVC/H.264 at 30 or 60 fps with resolution-aware bit rates (about 25 MB per minute at 1080p)
+  - [x] Microphone with level meter, mixed with system audio into one track
+  - [x] Camera bubble (round, draggable, three sizes) recorded with the screen
 - [x] URL scheme and CLI (`oneshot://capture-area`) for Raycast/Alfred
 - [x] Auto-update via Sparkle

@@ -47,6 +47,14 @@ enum Toast {
         hideWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + duration, execute: work)
     }
+
+    /// Hides the current toast early, e.g. a progress message once the work is done.
+    static func hide() {
+        guard let work = hideWork, !work.isCancelled else { return }
+        hideWork = nil
+        work.perform()
+        work.cancel()
+    }
 }
 
 private struct ToastView: View {

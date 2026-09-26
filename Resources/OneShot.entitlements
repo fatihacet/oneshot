@@ -6,5 +6,10 @@
          embedded Sparkle.framework. Developer ID builds do not need this but it is harmless. -->
     <key>com.apple.security.cs.disable-library-validation</key>
     <true/>
+    <!-- The hardened runtime blocks the camera and microphone unless these are present. -->
+    <key>com.apple.security.device.camera</key>
+    <true/>
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
 </dict>
 </plist>

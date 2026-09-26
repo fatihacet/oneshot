@@ -53,6 +53,15 @@ enum PrefKey {
     static let historyRetentionDays = "historyRetentionDays"
     static let indexingPaused = "indexingPaused"
     static let recordAudio = "recordAudio"
+    static let recordMode = "recordMode"
+    static let recordDisplayID = "recordDisplayID"
+    static let recordResolution = "recordResolution"
+    static let recordCodec = "recordCodec"
+    static let recordFrameRate = "recordFrameRate"
+    static let recordQuality = "recordQuality"
+    static let recordCameraID = "recordCameraID"
+    static let recordMicrophoneID = "recordMicrophoneID"
+    static let cameraBubbleSize = "cameraBubbleSize"
     static let recordCursor = "recordCursor"
     static let recordCountdown = "recordCountdown"
     static let gifFrameRate = "gifFrameRate"
@@ -89,7 +98,15 @@ enum Preferences {
             PrefKey.historyEnabled: true,
             PrefKey.historyRetentionDays: 90,
             PrefKey.indexingPaused: false,
-            PrefKey.recordAudio: false,
+            PrefKey.recordAudio: true,
+            PrefKey.recordMode: RecordingCaptureMode.screen.rawValue,
+            PrefKey.recordResolution: RecordingResolution.default.rawValue,
+            PrefKey.recordCodec: RecordingCodec.hevc.rawValue,
+            PrefKey.recordFrameRate: 30,
+            PrefKey.recordQuality: RecordingQuality.standard.rawValue,
+            PrefKey.recordCameraID: CaptureDevices.noDevice,
+            PrefKey.recordMicrophoneID: CaptureDevices.defaultDevice,
+            PrefKey.cameraBubbleSize: CameraBubble.Size.medium.rawValue,
             PrefKey.recordCursor: true,
             PrefKey.recordCountdown: 3,
             PrefKey.gifFrameRate: 15,
@@ -128,7 +145,45 @@ enum Preferences {
     static var historyRetentionDays: Int { defaults.integer(forKey: PrefKey.historyRetentionDays) }
     static var indexingPaused: Bool { defaults.bool(forKey: PrefKey.indexingPaused) }
 
-    static var recordAudio: Bool { defaults.bool(forKey: PrefKey.recordAudio) }
+    /// Whether screen recordings include system audio (what you hear).
+    static var recordAudio: Bool {
+        get { defaults.bool(forKey: PrefKey.recordAudio) }
+        set { defaults.set(newValue, forKey: PrefKey.recordAudio) }
+    }
+    static var recordMode: RecordingCaptureMode {
+        get { RecordingCaptureMode(rawValue: defaults.string(forKey: PrefKey.recordMode) ?? "") ?? .screen }
+        set { defaults.set(newValue.rawValue, forKey: PrefKey.recordMode) }
+    }
+    /// The display last chosen for full screen recordings.
+    static var recordDisplayID: CGDirectDisplayID? {
+        get { (defaults.object(forKey: PrefKey.recordDisplayID) as? NSNumber)?.uint32Value }
+        set { defaults.set(newValue.map { NSNumber(value: $0) }, forKey: PrefKey.recordDisplayID) }
+    }
+    static var recordResolution: RecordingResolution {
+        get { RecordingResolution(rawValue: defaults.string(forKey: PrefKey.recordResolution) ?? "") ?? .default }
+        set { defaults.set(newValue.rawValue, forKey: PrefKey.recordResolution) }
+    }
+    static var recordCodec: RecordingCodec {
+        RecordingCodec(rawValue: defaults.string(forKey: PrefKey.recordCodec) ?? "") ?? .hevc
+    }
+    static var recordFrameRate: Int { min(60, max(15, defaults.integer(forKey: PrefKey.recordFrameRate))) }
+    static var recordQuality: RecordingQuality {
+        RecordingQuality(rawValue: defaults.string(forKey: PrefKey.recordQuality) ?? "") ?? .standard
+    }
+    /// A camera's unique ID, `CaptureDevices.noDevice` or `CaptureDevices.defaultDevice`.
+    static var recordCameraID: String {
+        get { defaults.string(forKey: PrefKey.recordCameraID) ?? CaptureDevices.noDevice }
+        set { defaults.set(newValue, forKey: PrefKey.recordCameraID) }
+    }
+    /// A microphone's unique ID, `CaptureDevices.noDevice` or `CaptureDevices.defaultDevice`.
+    static var recordMicrophoneID: String {
+        get { defaults.string(forKey: PrefKey.recordMicrophoneID) ?? CaptureDevices.defaultDevice }
+        set { defaults.set(newValue, forKey: PrefKey.recordMicrophoneID) }
+    }
+    static var cameraBubbleSize: CameraBubble.Size {
+        get { CameraBubble.Size(rawValue: defaults.string(forKey: PrefKey.cameraBubbleSize) ?? "") ?? .medium }
+        set { defaults.set(newValue.rawValue, forKey: PrefKey.cameraBubbleSize) }
+    }
     static var recordCursor: Bool { defaults.bool(forKey: PrefKey.recordCursor) }
     /// Seconds to count down before a recording starts; 0 starts immediately.
     static var recordCountdown: Int { defaults.integer(forKey: PrefKey.recordCountdown) }

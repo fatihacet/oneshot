@@ -202,7 +202,10 @@ private struct CaptureSettingsView: View {
     @AppStorage(PrefKey.selfTimerSeconds) private var selfTimerSeconds = 5
     @AppStorage(PrefKey.hideDesktopIcons) private var hideDesktopIcons = false
     @AppStorage(PrefKey.hideDesktopWidgets) private var hideDesktopWidgets = false
-    @AppStorage(PrefKey.recordAudio) private var recordAudio = false
+    @AppStorage(PrefKey.recordAudio) private var recordAudio = true
+    @AppStorage(PrefKey.recordCodec) private var recordCodec = RecordingCodec.hevc.rawValue
+    @AppStorage(PrefKey.recordFrameRate) private var recordFrameRate = 30
+    @AppStorage(PrefKey.recordQuality) private var recordQuality = RecordingQuality.standard.rawValue
     @AppStorage(PrefKey.recordCursor) private var recordCursor = true
     @AppStorage(PrefKey.recordCountdown) private var recordCountdown = 3
     @AppStorage(PrefKey.gifFrameRate) private var gifFrameRate = 15
@@ -236,8 +239,18 @@ private struct CaptureSettingsView: View {
             Section("Window capture") {
                 Toggle("Include window shadow", isOn: $windowShadow)
             }
-            Section("Screen recording") {
-                Toggle("Record system audio (video only)", isOn: $recordAudio)
+            Section {
+                Picker("Video format", selection: $recordCodec) {
+                    ForEach(RecordingCodec.allCases) { Text($0.title).tag($0.rawValue) }
+                }
+                Picker("Frame rate", selection: $recordFrameRate) {
+                    Text("30 fps").tag(30)
+                    Text("60 fps").tag(60)
+                }
+                Picker("Quality", selection: $recordQuality) {
+                    ForEach(RecordingQuality.allCases) { Text($0.title).tag($0.rawValue) }
+                }
+                Toggle("Record system audio", isOn: $recordAudio)
                 Toggle("Show the mouse pointer", isOn: $recordCursor)
                 Picker("Countdown", selection: $recordCountdown) {
                     Text("None").tag(0)
@@ -250,6 +263,12 @@ private struct CaptureSettingsView: View {
                 Picker("GIF maximum width", selection: $gifMaxWidth) {
                     ForEach([480, 640, 960, 1280, 1920], id: \.self) { Text("\($0) px").tag($0) }
                 }
+            } header: {
+                Text("Screen recording")
+            } footer: {
+                Text("Choose the screen, resolution, camera and microphone in the panel that opens when you record. HEVC files are about 40% smaller than H.264 and play in current browsers; High quality doubles the file size.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Section("Text recognition") {
                 Toggle("Keep line breaks", isOn: $ocrKeepLineBreaks)
