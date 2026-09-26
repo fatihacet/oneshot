@@ -36,7 +36,8 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           # Checkout replaces annotated tags with lightweight ones; fetch the real tag for its message.
           git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
-          git tag -l --format='%(contents)' "$GITHUB_REF_NAME" | sed '/-----BEGIN PGP SIGNATURE-----/,$d' > "$RUNNER_TEMP/notes.txt"
+          # Drop the tag's signature (PGP, SSH or X.509), which git appends to the message.
+          git tag -l --format='%(contents)' "$GITHUB_REF_NAME" | sed '/^-----BEGIN .*-----$/,$d' > "$RUNNER_TEMP/notes.txt"
 
       - name: Show toolchain
         run: |
