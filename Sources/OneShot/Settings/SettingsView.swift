@@ -153,6 +153,9 @@ private struct GeneralSettingsView: View {
                     Spacer()
                     Button("Check Now") { Updater.shared.checkForUpdates() }
                 }
+                LabeledContent("Setup assistant") {
+                    Button("Open…") { OnboardingWindowController.shared.show() }
+                }
             }
         }
         .formStyle(.grouped)

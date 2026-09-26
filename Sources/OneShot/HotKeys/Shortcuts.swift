@@ -49,8 +49,21 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Capture actions are listed together at the top of the menu bar menu.
-    var isCapture: Bool { self != .openHistory }
+    /// Where the menu bar menu lists the action when it has no shortcut.
+    /// Actions with a shortcut are always listed first, at the top level.
+    enum MenuGroup {
+        case capture
+        case record
+        case history
+    }
+
+    var menuGroup: MenuGroup {
+        switch self {
+        case .recordVideo, .recordGIF: return .record
+        case .openHistory: return .history
+        default: return .capture
+        }
+    }
 
     var defaultHotKey: HotKey? {
         let commandShift = HotKey.command | HotKey.shift
