@@ -396,6 +396,13 @@ private struct HistoryInspector: View {
                 if let caption = item.caption, !caption.isEmpty {
                     section("Description") { Text(caption).textSelection(.enabled) }
                 }
+                if !item.labels.isEmpty {
+                    section("Shows") {
+                        Text(item.labels.joined(separator: " · "))
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                }
                 if !item.tags.isEmpty {
                     section("Tags") {
                         Text(item.tags.joined(separator: " · "))

@@ -115,6 +115,10 @@ actor HistoryService {
         (try? database().pendingTextRecognition(limit: limit)) ?? []
     }
 
+    func pendingImageLabels(limit: Int) -> [HistoryItem] {
+        (try? database().pendingImageLabels(limit: limit)) ?? []
+    }
+
     func pendingDescriptions(limit: Int) -> [HistoryItem] {
         (try? database().pendingDescriptions(limit: limit)) ?? []
     }
@@ -125,6 +129,11 @@ actor HistoryService {
 
     func updateRecognizedText(id: String, text: String) {
         try? database().updateRecognizedText(id: id, text: text)
+        notifyChange()
+    }
+
+    func updateImageLabels(id: String, labels: [String]) {
+        try? database().updateImageLabels(id: id, labels: labels)
         notifyChange()
     }
 

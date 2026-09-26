@@ -59,7 +59,7 @@ struct HistorySettingsView: View {
             } header: {
                 Text("Search indexing")
             } footer: {
-                Text("Text in screenshots is recognized on this Mac and used for search.")
+                Text("Text and what each image shows (for example a sunset, a chart or a document) are recognized on this Mac and used for search. Nothing is sent anywhere.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -84,7 +84,7 @@ struct HistorySettingsView: View {
     private var statusText: String {
         guard let stats else { return "…" }
         if indexingPaused { return "Paused" }
-        let pending = stats.pendingText + stats.pendingDescriptions + stats.pendingEmbeddings
+        let pending = stats.pending
         if pending == 0 { return "Up to date" }
         return status.isIndexing ? "Indexing \(pending) remaining…" : "\(pending) waiting"
     }

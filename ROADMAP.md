@@ -42,8 +42,9 @@ OneShot ships in small, usable milestones. Checked items are done.
   - [x] Saved custom presets
 - [x] History and semantic search
   - [x] Local history of every capture (SQLite + thumbnails, capture app/window metadata)
-  - [x] Background indexing: on-device OCR and embeddings
+  - [x] Background indexing: on-device OCR, image labels and embeddings
   - [x] Hybrid search: full-text (FTS5) + embeddings (Accelerate cosine similarity; macOS SQLite cannot load sqlite-vec)
+  - [x] On-device image labels (Vision classification) so pictures without text are searchable
   - [x] Optional local captions and embeddings with Ollama (cloud providers removed for privacy)
   - [x] Filters by date, app and window title
   - [x] Actions from results: copy, pin, reveal in Finder, upload

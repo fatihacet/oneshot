@@ -17,7 +17,7 @@ A fast, open-source screenshot tool for macOS, inspired by CleanShot X. Lives in
 - **Annotate**: arrows, lines, rectangles, ellipses, pen, highlighter, text, numbered steps, pixelate redaction and crop, with undo/redo and single-key tool shortcuts
 - **Background tool**: gradients, colors or pictures behind a screenshot with padding, rounded corners, shadow, aspect ratio presets, alignment and saved presets
 - **Upload to S3-compatible storage** (AWS S3, Cloudflare R2, Backblaze B2, MinIO): public, custom-domain or presigned links copied to the clipboard, upload history with remote delete, keys in the Keychain
-- **History and search**: every capture is kept locally (configurable retention) and indexed with on-device OCR and embeddings; optional captions from a local Ollama model; hybrid keyword + semantic search with date and app filters. Nothing is sent to the cloud
+- **History and search**: every capture is kept locally (configurable retention) and indexed on this Mac: text recognition, image labels (search "sunset", "chart" or "cat" to find pictures without text) and embeddings; optional captions from a local Ollama model; hybrid keyword + semantic search with date and app filters. Nothing is sent to the cloud
 - **Text recognition (OCR)** and QR/barcode reading, fully on-device via Apple Vision
 
 See [ROADMAP.md](ROADMAP.md) for what is coming next.

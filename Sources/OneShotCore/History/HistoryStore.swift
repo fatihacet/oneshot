@@ -26,7 +26,10 @@ public struct HistoryItem: Identifiable, Equatable, Sendable {
     public var ocrText: String?
     public var caption: String?
     public var tags: [String]
+    /// What the image shows, from on-device image classification, e.g. "sunset sunrise", "chart".
+    public var labels: [String]
     public var isTextRecognized: Bool
+    public var isImageLabeled: Bool
     public var descriptionState: DescriptionState
     public var embeddingModel: String?
 
@@ -45,7 +48,9 @@ public struct HistoryItem: Identifiable, Equatable, Sendable {
         ocrText: String? = nil,
         caption: String? = nil,
         tags: [String] = [],
+        labels: [String] = [],
         isTextRecognized: Bool = false,
+        isImageLabeled: Bool = false,
         descriptionState: DescriptionState = .pending,
         embeddingModel: String? = nil
     ) {
@@ -63,7 +68,9 @@ public struct HistoryItem: Identifiable, Equatable, Sendable {
         self.ocrText = ocrText
         self.caption = caption
         self.tags = tags
+        self.labels = labels
         self.isTextRecognized = isTextRecognized
+        self.isImageLabeled = isImageLabeled
         self.descriptionState = descriptionState
         self.embeddingModel = embeddingModel
     }
@@ -73,6 +80,7 @@ public struct HistoryItem: Identifiable, Equatable, Sendable {
         var parts: [String] = []
         if let caption, !caption.isEmpty { parts.append(caption) }
         if !tags.isEmpty { parts.append(tags.joined(separator: ", ")) }
+        if !labels.isEmpty { parts.append(labels.joined(separator: ", ")) }
         if let appName { parts.append(appName) }
         if let windowTitle, !windowTitle.isEmpty { parts.append(windowTitle) }
         if let ocrText, !ocrText.isEmpty { parts.append(String(ocrText.prefix(2000))) }
@@ -93,15 +101,19 @@ public struct HistoryFilter: Equatable, Sendable {
 public struct IndexingStats: Equatable, Sendable {
     public var total: Int
     public var pendingText: Int
+    public var pendingLabels: Int
     public var pendingDescriptions: Int
     public var pendingEmbeddings: Int
 
-    public init(total: Int, pendingText: Int, pendingDescriptions: Int, pendingEmbeddings: Int) {
+    public init(total: Int, pendingText: Int, pendingLabels: Int, pendingDescriptions: Int, pendingEmbeddings: Int) {
         self.total = total
         self.pendingText = pendingText
+        self.pendingLabels = pendingLabels
         self.pendingDescriptions = pendingDescriptions
         self.pendingEmbeddings = pendingEmbeddings
     }
+
+    public var pending: Int { pendingText + pendingLabels + pendingDescriptions + pendingEmbeddings }
 }
 
 /// Capture history in SQLite with full-text search (FTS5) and embedding-based semantic search.
@@ -113,7 +125,7 @@ public final class HistoryStore {
     private static let columns = """
     c.id, c.created_at, c.file_name, c.thumbnail_name, c.pixel_width, c.pixel_height, c.scale, \
     c.app_name, c.window_title, c.saved_path, c.upload_link, c.ocr_text, c.caption, c.tags, \
-    c.ocr_done, c.description_state, c.embedding_model
+    c.ocr_done, c.description_state, c.embedding_model, c.labels, c.labels_done
     """
 
     public init(url: URL) throws {
@@ -121,6 +133,7 @@ public final class HistoryStore {
         try migrate()
     }
 
+    /// Creates the original schema, then applies numbered migrations tracked in `PRAGMA user_version`.
     private func migrate() throws {
         try db.execute("PRAGMA journal_mode = WAL")
         try db.execute("""
@@ -145,24 +158,65 @@ public final class HistoryStore {
             embedding_model TEXT
         );
         CREATE INDEX IF NOT EXISTS captures_created_at ON captures(created_at DESC);
-        CREATE VIRTUAL TABLE IF NOT EXISTS captures_fts USING fts5(
-            ocr_text, caption, tags, app_name, window_title,
+        """)
+
+        if try userVersion() < 1 {
+            try db.transaction { try migrateToImageLabels() }
+        }
+    }
+
+    // Statements are read to the end in their own functions, so none is still open during schema changes.
+    private func userVersion() throws -> Int {
+        let statement = try db.prepare("PRAGMA user_version")
+        var version = 0
+        while try statement.step() { version = Int(statement.int(0)) }
+        return version
+    }
+
+    private func columnNames() throws -> Set<String> {
+        let statement = try db.prepare("PRAGMA table_info(captures)")
+        var names: Set<String> = []
+        while try statement.step() {
+            if let name = statement.string(1) { names.insert(name) }
+        }
+        return names
+    }
+
+    /// Version 1: on-device image labels, stored per capture and searchable like tags.
+    /// Existing captures are labeled (and re-embedded) by the indexer.
+    private func migrateToImageLabels() throws {
+        if try !columnNames().contains("labels") {
+            try db.execute("""
+            ALTER TABLE captures ADD COLUMN labels TEXT;
+            ALTER TABLE captures ADD COLUMN labels_done INTEGER NOT NULL DEFAULT 0;
+            """)
+        }
+        // FTS5 columns cannot be altered, so the index and its triggers are rebuilt with the new column.
+        try db.execute("""
+        DROP TRIGGER IF EXISTS captures_ai;
+        DROP TRIGGER IF EXISTS captures_ad;
+        DROP TRIGGER IF EXISTS captures_au;
+        DROP TABLE IF EXISTS captures_fts;
+        CREATE VIRTUAL TABLE captures_fts USING fts5(
+            ocr_text, caption, tags, labels, app_name, window_title,
             content='captures', content_rowid='rowid', tokenize='unicode61 remove_diacritics 2'
         );
-        CREATE TRIGGER IF NOT EXISTS captures_ai AFTER INSERT ON captures BEGIN
-            INSERT INTO captures_fts(rowid, ocr_text, caption, tags, app_name, window_title)
-            VALUES (new.rowid, new.ocr_text, new.caption, new.tags, new.app_name, new.window_title);
+        CREATE TRIGGER captures_ai AFTER INSERT ON captures BEGIN
+            INSERT INTO captures_fts(rowid, ocr_text, caption, tags, labels, app_name, window_title)
+            VALUES (new.rowid, new.ocr_text, new.caption, new.tags, new.labels, new.app_name, new.window_title);
         END;
-        CREATE TRIGGER IF NOT EXISTS captures_ad AFTER DELETE ON captures BEGIN
-            INSERT INTO captures_fts(captures_fts, rowid, ocr_text, caption, tags, app_name, window_title)
-            VALUES ('delete', old.rowid, old.ocr_text, old.caption, old.tags, old.app_name, old.window_title);
+        CREATE TRIGGER captures_ad AFTER DELETE ON captures BEGIN
+            INSERT INTO captures_fts(captures_fts, rowid, ocr_text, caption, tags, labels, app_name, window_title)
+            VALUES ('delete', old.rowid, old.ocr_text, old.caption, old.tags, old.labels, old.app_name, old.window_title);
         END;
-        CREATE TRIGGER IF NOT EXISTS captures_au AFTER UPDATE OF ocr_text, caption, tags, app_name, window_title ON captures BEGIN
-            INSERT INTO captures_fts(captures_fts, rowid, ocr_text, caption, tags, app_name, window_title)
-            VALUES ('delete', old.rowid, old.ocr_text, old.caption, old.tags, old.app_name, old.window_title);
-            INSERT INTO captures_fts(rowid, ocr_text, caption, tags, app_name, window_title)
-            VALUES (new.rowid, new.ocr_text, new.caption, new.tags, new.app_name, new.window_title);
+        CREATE TRIGGER captures_au AFTER UPDATE OF ocr_text, caption, tags, labels, app_name, window_title ON captures BEGIN
+            INSERT INTO captures_fts(captures_fts, rowid, ocr_text, caption, tags, labels, app_name, window_title)
+            VALUES ('delete', old.rowid, old.ocr_text, old.caption, old.tags, old.labels, old.app_name, old.window_title);
+            INSERT INTO captures_fts(rowid, ocr_text, caption, tags, labels, app_name, window_title)
+            VALUES (new.rowid, new.ocr_text, new.caption, new.tags, new.labels, new.app_name, new.window_title);
         END;
+        INSERT INTO captures_fts(captures_fts) VALUES ('rebuild');
+        PRAGMA user_version = 1;
         """)
     }
 
@@ -171,8 +225,9 @@ public final class HistoryStore {
     public func insert(_ item: HistoryItem) throws {
         try db.run("""
         INSERT INTO captures (id, created_at, file_name, thumbnail_name, pixel_width, pixel_height, scale,
-            app_name, window_title, saved_path, upload_link, ocr_text, caption, tags, ocr_done, description_state)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            app_name, window_title, saved_path, upload_link, ocr_text, caption, tags, ocr_done, description_state,
+            labels, labels_done)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, [
             .text(item.id), .real(item.createdAt.timeIntervalSince1970), .text(item.fileName),
             .text(item.thumbnailName), .integer(Int64(item.pixelWidth)), .integer(Int64(item.pixelHeight)),
@@ -180,12 +235,20 @@ public final class HistoryStore {
             SQLValue(item.uploadLink), SQLValue(item.ocrText), SQLValue(item.caption),
             SQLValue(item.tags.isEmpty ? nil : item.tags.joined(separator: ", ")),
             .integer(item.isTextRecognized ? 1 : 0), .integer(Int64(item.descriptionState.rawValue)),
+            SQLValue(item.labels.isEmpty ? nil : item.labels.joined(separator: ", ")),
+            .integer(item.isImageLabeled ? 1 : 0),
         ])
     }
 
     public func updateRecognizedText(id: String, text: String) throws {
         try db.run("UPDATE captures SET ocr_text = ?, ocr_done = 1, embedding_model = NULL WHERE id = ?", [
             .text(text), .text(id),
+        ])
+    }
+
+    public func updateImageLabels(id: String, labels: [String]) throws {
+        try db.run("UPDATE captures SET labels = ?, labels_done = 1, embedding_model = NULL WHERE id = ?", [
+            SQLValue(labels.isEmpty ? nil : labels.joined(separator: ", ")), .text(id),
         ])
     }
 
@@ -278,6 +341,13 @@ public final class HistoryStore {
         )
     }
 
+    public func pendingImageLabels(limit: Int) throws -> [HistoryItem] {
+        try items(
+            sql: "SELECT \(Self.columns) FROM captures c WHERE c.labels_done = 0 ORDER BY c.created_at DESC LIMIT ?",
+            [.integer(Int64(limit))]
+        )
+    }
+
     public func pendingDescriptions(limit: Int) throws -> [HistoryItem] {
         try items(
             sql: """
@@ -288,12 +358,13 @@ public final class HistoryStore {
         )
     }
 
-    /// Captures whose text is final (OCR done, description not pending) but that lack an embedding from `model`.
+    /// Captures whose text is final (OCR and labels done, description not pending) but that lack an
+    /// embedding from `model`.
     public func pendingEmbeddings(model: String, limit: Int) throws -> [HistoryItem] {
         try items(
             sql: """
             SELECT \(Self.columns) FROM captures c
-            WHERE c.ocr_done = 1 AND c.description_state != 0
+            WHERE c.ocr_done = 1 AND c.labels_done = 1 AND c.description_state != 0
               AND (c.embedding_model IS NULL OR c.embedding_model != ?)
             ORDER BY c.created_at DESC LIMIT ?
             """,
@@ -305,16 +376,20 @@ public final class HistoryStore {
         let statement = try db.prepare("""
         SELECT COUNT(*),
                SUM(CASE WHEN ocr_done = 0 THEN 1 ELSE 0 END),
+               SUM(CASE WHEN labels_done = 0 THEN 1 ELSE 0 END),
                SUM(CASE WHEN description_state = 0 THEN 1 ELSE 0 END),
                SUM(CASE WHEN embedding_model IS NULL OR embedding_model != ? THEN 1 ELSE 0 END)
         FROM captures
         """, [SQLValue(embeddingModel ?? "")])
-        guard try statement.step() else { return IndexingStats(total: 0, pendingText: 0, pendingDescriptions: 0, pendingEmbeddings: 0) }
+        guard try statement.step() else {
+            return IndexingStats(total: 0, pendingText: 0, pendingLabels: 0, pendingDescriptions: 0, pendingEmbeddings: 0)
+        }
         return IndexingStats(
             total: Int(statement.int(0)),
             pendingText: Int(statement.int(1)),
-            pendingDescriptions: Int(statement.int(2)),
-            pendingEmbeddings: embeddingModel == nil ? 0 : Int(statement.int(3))
+            pendingLabels: Int(statement.int(2)),
+            pendingDescriptions: Int(statement.int(3)),
+            pendingEmbeddings: embeddingModel == nil ? 0 : Int(statement.int(4))
         )
     }
 
@@ -338,7 +413,7 @@ public final class HistoryStore {
             let statement = try db.prepare("""
             SELECT c.id FROM captures_fts f JOIN captures c ON c.rowid = f.rowid
             WHERE captures_fts MATCH ?\(clause)
-            ORDER BY bm25(captures_fts, 1.0, 2.0, 2.0, 1.5, 1.5) LIMIT 200
+            ORDER BY bm25(captures_fts, 1.0, 2.0, 2.0, 2.0, 1.5, 1.5) LIMIT 200
             """, [.text(match)] + filterValues)
             var rank = 0
             while try statement.step() {
@@ -422,15 +497,19 @@ public final class HistoryStore {
                 uploadLink: statement.string(10),
                 ocrText: statement.string(11),
                 caption: statement.string(12),
-                tags: (statement.string(13) ?? "")
-                    .split(separator: ",")
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty },
+                tags: Self.list(statement.string(13)),
+                labels: Self.list(statement.string(17)),
                 isTextRecognized: statement.int(14) != 0,
+                isImageLabeled: statement.int(18) != 0,
                 descriptionState: HistoryItem.DescriptionState(rawValue: Int(statement.int(15))) ?? .pending,
                 embeddingModel: statement.string(16)
             ))
         }
         return result
+    }
+
+    /// Splits a stored comma-separated list.
+    private static func list(_ value: String?) -> [String] {
+        (value ?? "").split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
     }
 }

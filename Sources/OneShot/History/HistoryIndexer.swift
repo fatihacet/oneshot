@@ -11,7 +11,8 @@ final class IndexingStatus: ObservableObject {
 }
 
 /// Background pipeline that enriches history captures for search:
-/// 1. on-device text recognition, 2. optional AI description, 3. embedding.
+/// 1. on-device text recognition, 2. on-device image labels, 3. optional description by a local
+/// Ollama model, 4. embedding.
 actor HistoryIndexer {
     static let shared = HistoryIndexer()
 
@@ -37,6 +38,7 @@ actor HistoryIndexer {
             wakeRequested = false
             guard !isPaused else { break }
             await recognizeText()
+            await labelImages()
             await describeCaptures()
             await embedCaptures()
         } while wakeRequested && !isPaused
@@ -57,6 +59,21 @@ actor HistoryIndexer {
                     text = (try? await TextRecognizer.recognizeAllText(in: image)) ?? ""
                 }
                 await service.updateRecognizedText(id: item.id, text: text)
+            }
+        }
+    }
+
+    private func labelImages() async {
+        while !isPaused {
+            let batch = await service.pendingImageLabels(limit: 8)
+            guard !batch.isEmpty else { return }
+            for item in batch {
+                guard !isPaused else { return }
+                var labels: [String] = []
+                if let image = Self.loadImage(at: service.imageURL(for: item)) {
+                    labels = (try? ImageLabeler.labels(for: image)) ?? []
+                }
+                await service.updateImageLabels(id: item.id, labels: labels)
             }
         }
     }
