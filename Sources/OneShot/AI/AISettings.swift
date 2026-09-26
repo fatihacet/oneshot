@@ -1,11 +1,9 @@
 import Foundation
 
-/// Services that can describe screenshots.
+/// Services that can describe screenshots. Only a local Ollama model: captions from cloud
+/// providers were removed, since they sent every screenshot off the Mac.
 enum AIProviderKind: String, CaseIterable, Identifiable {
     case none
-    case openAI
-    case anthropic
-    case gemini
     case ollama
 
     var id: String { rawValue }
@@ -13,21 +11,13 @@ enum AIProviderKind: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .none: return "Off"
-        case .openAI: return "OpenAI"
-        case .anthropic: return "Anthropic"
-        case .gemini: return "Google Gemini"
         case .ollama: return "Ollama (on this Mac)"
         }
     }
 
-    var needsAPIKey: Bool { self == .openAI || self == .anthropic || self == .gemini }
-
     var defaultVisionModel: String {
         switch self {
         case .none: return ""
-        case .openAI: return "gpt-5-mini"
-        case .anthropic: return "claude-opus-5"
-        case .gemini: return "gemini-2.5-flash"
         case .ollama: return "qwen2.5vl"
         }
     }
@@ -36,8 +26,6 @@ enum AIProviderKind: String, CaseIterable, Identifiable {
 /// Services that can embed text for semantic search.
 enum EmbeddingProviderKind: String, CaseIterable, Identifiable {
     case onDevice
-    case openAI
-    case gemini
     case ollama
 
     var id: String { rawValue }
@@ -45,8 +33,6 @@ enum EmbeddingProviderKind: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .onDevice: return "On-device (Apple)"
-        case .openAI: return "OpenAI"
-        case .gemini: return "Google Gemini"
         case .ollama: return "Ollama (on this Mac)"
         }
     }
@@ -54,23 +40,12 @@ enum EmbeddingProviderKind: String, CaseIterable, Identifiable {
     var defaultModel: String {
         switch self {
         case .onDevice: return ""
-        case .openAI: return "text-embedding-3-small"
-        case .gemini: return "gemini-embedding-001"
         case .ollama: return "nomic-embed-text"
-        }
-    }
-
-    var keyProvider: AIProviderKind {
-        switch self {
-        case .onDevice: return .none
-        case .openAI: return .openAI
-        case .gemini: return .gemini
-        case .ollama: return .ollama
         }
     }
 }
 
-/// Which AI services the history indexer uses. Keys live in the Keychain, the rest in UserDefaults.
+/// Which models the history indexer uses, stored in UserDefaults.
 @MainActor
 enum AISettings {
     static let describeProviderKey = "ai.describeProvider"
@@ -92,7 +67,6 @@ enum AISettings {
 
     static func visionModelKey(_ provider: AIProviderKind) -> String { "ai.\(provider.rawValue).visionModel" }
     static func embeddingModelKey(_ provider: EmbeddingProviderKind) -> String { "ai.\(provider.rawValue).embeddingModel" }
-    static func apiKeyAccount(_ provider: AIProviderKind) -> String { "ai.\(provider.rawValue).apiKey" }
 
     static func visionModel(for provider: AIProviderKind) -> String {
         let value = defaults.string(forKey: visionModelKey(provider))?.trimmingCharacters(in: .whitespaces) ?? ""
@@ -102,14 +76,6 @@ enum AISettings {
     static func embeddingModel(for provider: EmbeddingProviderKind) -> String {
         let value = defaults.string(forKey: embeddingModelKey(provider))?.trimmingCharacters(in: .whitespaces) ?? ""
         return value.isEmpty ? provider.defaultModel : value
-    }
-
-    static func apiKey(for provider: AIProviderKind) -> String {
-        Keychain.string(for: apiKeyAccount(provider)) ?? ""
-    }
-
-    static func setAPIKey(_ key: String, for provider: AIProviderKind) {
-        Keychain.set(key.trimmingCharacters(in: .whitespacesAndNewlines), for: apiKeyAccount(provider))
     }
 
     static var ollamaBaseURL: URL {
@@ -125,28 +91,29 @@ enum AISettings {
     }
 
     static func makeDescriber(for provider: AIProviderKind) -> ScreenshotDescriber? {
-        let model = visionModel(for: provider)
-        let key = apiKey(for: provider)
-        if provider.needsAPIKey, key.isEmpty { return nil }
         switch provider {
         case .none: return nil
-        case .openAI: return OpenAIDescriber(apiKey: key, model: model)
-        case .anthropic: return AnthropicDescriber(apiKey: key, model: model)
-        case .gemini: return GeminiDescriber(apiKey: key, model: model)
-        case .ollama: return OllamaDescriber(baseURL: ollamaBaseURL, model: model)
+        case .ollama: return OllamaDescriber(baseURL: ollamaBaseURL, model: visionModel(for: provider))
         }
     }
 
-    /// The configured embedder, falling back to on-device embeddings when a key is missing.
     static func makeEmbedder() -> TextEmbedder {
-        let provider = embeddingProvider
-        let model = embeddingModel(for: provider)
-        let key = apiKey(for: provider.keyProvider)
-        switch provider {
+        switch embeddingProvider {
         case .onDevice: return AppleSentenceEmbedder()
-        case .openAI: return key.isEmpty ? AppleSentenceEmbedder() : OpenAIEmbedder(apiKey: key, model: model)
-        case .gemini: return key.isEmpty ? AppleSentenceEmbedder() : GeminiEmbedder(apiKey: key, model: model)
-        case .ollama: return OllamaEmbedder(baseURL: ollamaBaseURL, model: model)
+        case .ollama: return OllamaEmbedder(baseURL: ollamaBaseURL, model: embeddingModel(for: .ollama))
+        }
+    }
+
+    /// Deletes, once, the API keys and model choices of the removed cloud providers (OpenAI,
+    /// Anthropic, Google Gemini). A provider choice that no longer exists already reads as Off / On-device.
+    static func removeCloudProviderSettings() {
+        let doneKey = "ai.cloudProvidersRemoved"
+        guard !defaults.bool(forKey: doneKey) else { return }
+        defaults.set(true, forKey: doneKey)
+        for provider in ["openAI", "anthropic", "gemini"] {
+            Keychain.set(nil, for: "ai.\(provider).apiKey")
+            defaults.removeObject(forKey: "ai.\(provider).visionModel")
+            defaults.removeObject(forKey: "ai.\(provider).embeddingModel")
         }
     }
 }

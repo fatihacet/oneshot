@@ -24,7 +24,7 @@ enum AIHTTP {
         let status = http.statusCode
         switch status {
         case 401, 403:
-            throw AIProviderError(message: "The API key was rejected (\(status)): \(message)", isFatal: true)
+            throw AIProviderError(message: "Access denied (\(status)): \(message)", isFatal: true)
         case 404:
             throw AIProviderError(message: "Not found (\(status)): \(message). Check the model name.", isFatal: true)
         case 400:

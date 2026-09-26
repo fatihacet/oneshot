@@ -42,9 +42,9 @@ OneShot ships in small, usable milestones. Checked items are done.
   - [x] Saved custom presets
 - [x] History and semantic search
   - [x] Local history of every capture (SQLite + thumbnails, capture app/window metadata)
-  - [x] Background indexing: on-device OCR plus vision-model captions and tags
+  - [x] Background indexing: on-device OCR and embeddings
   - [x] Hybrid search: full-text (FTS5) + embeddings (Accelerate cosine similarity; macOS SQLite cannot load sqlite-vec)
-  - [x] Providers: OpenAI, Anthropic, Google Gemini, Ollama (fully local)
+  - [x] Optional local captions and embeddings with Ollama (cloud providers removed for privacy)
   - [x] Filters by date, app and window title
   - [x] Actions from results: copy, pin, reveal in Finder, upload
   - [x] Retention policy, pause/resume indexing
@@ -53,7 +53,6 @@ OneShot ships in small, usable milestones. Checked items are done.
   - [x] Save folder and default after-capture actions
   - [x] Shortcut setup, including taking over the macOS shortcuts
   - [x] Optional S3 setup with "Test connection"
-  - [x] Optional LLM provider and API key (skippable; Ollama needs no key)
 - [x] Annotation tools (arrow, line, rectangle, ellipse, pen, highlighter, text, counter, pixelate, crop)
 - [x] Screen recording / GIF (area, window or full screen; system audio; countdown)
 - [x] Loom-style recording

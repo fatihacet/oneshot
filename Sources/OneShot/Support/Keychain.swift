@@ -1,7 +1,7 @@
 import Foundation
 import Security
 
-/// Generic-password storage for secrets such as API keys.
+/// Generic-password storage for secrets such as the S3 credentials.
 enum Keychain {
     private static let service = "dev.oneshot.OneShot"
 

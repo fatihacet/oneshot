@@ -1,13 +1,12 @@
 import AppKit
 import SwiftUI
 
+/// Optional local models from Ollama. Search already works on this Mac without them: text recognition,
+/// image labels and on-device embeddings. Ollama adds captions and its own embeddings, also locally.
 struct AISettingsView: View {
     @AppStorage(AISettings.describeProviderKey) private var describeProvider = AIProviderKind.none.rawValue
     @AppStorage(AISettings.embeddingProviderKey) private var embeddingProvider = EmbeddingProviderKind.onDevice.rawValue
     @AppStorage(AISettings.ollamaURLKey) private var ollamaURL = ""
-    @State private var openAIKey = AISettings.apiKey(for: .openAI)
-    @State private var anthropicKey = AISettings.apiKey(for: .anthropic)
-    @State private var geminiKey = AISettings.apiKey(for: .gemini)
     @State private var testState = TestState.idle
 
     private enum TestState: Equatable {
@@ -28,10 +27,6 @@ struct AISettingsView: View {
                 }
                 if provider != .none {
                     TextField("Model", text: defaultsBinding(AISettings.visionModelKey(provider)), prompt: Text(provider.defaultVisionModel))
-                    if provider.needsAPIKey, AISettings.apiKey(for: provider).isEmpty {
-                        Label("Add a \(provider.title) API key below.", systemImage: "key.fill")
-                            .foregroundStyle(.orange)
-                    }
                     HStack {
                         Button("Test", action: testDescriber)
                             .disabled(testState == .running)
@@ -46,13 +41,9 @@ struct AISettingsView: View {
                     }
                 }
             } header: {
-                Text("AI descriptions")
+                Text("Captions")
             } footer: {
-                Text(provider == .none
-                    ? "Optionally let a vision model caption and tag each capture for better search."
-                    : provider == .ollama
-                    ? "Screenshots stay on this Mac: Ollama runs the model locally."
-                    : "Screenshots are sent to \(provider.title) to be described.")
+                Text("Optionally let a vision model running in Ollama caption each capture. Search already recognizes text and what each image shows without it.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -72,26 +63,22 @@ struct AISettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section {
-                SecureField("OpenAI", text: $openAIKey, prompt: Text("sk-…"))
-                SecureField("Anthropic", text: $anthropicKey, prompt: Text("sk-ant-…"))
-                SecureField("Google Gemini", text: $geminiKey)
-                TextField("Ollama server", text: $ollamaURL, prompt: Text(AISettings.defaultOllamaURL))
-            } header: {
-                Text("API keys")
-            } footer: {
-                Text("Keys are stored in your Keychain.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            if provider == .ollama || embedding == .ollama {
+                Section {
+                    TextField("Server", text: $ollamaURL, prompt: Text(AISettings.defaultOllamaURL))
+                } header: {
+                    Text("Ollama")
+                } footer: {
+                    Text("Screenshots stay on this Mac: Ollama runs the models locally.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .formStyle(.grouped)
         .onChange(of: describeProvider) { _, _ in settingsChanged() }
         .onChange(of: embeddingProvider) { _, _ in settingsChanged() }
         .onChange(of: ollamaURL) { _, _ in settingsChanged() }
-        .onChange(of: openAIKey) { _, key in AISettings.setAPIKey(key, for: .openAI); settingsChanged() }
-        .onChange(of: anthropicKey) { _, key in AISettings.setAPIKey(key, for: .anthropic); settingsChanged() }
-        .onChange(of: geminiKey) { _, key in AISettings.setAPIKey(key, for: .gemini); settingsChanged() }
     }
 
     @ViewBuilder
@@ -133,10 +120,7 @@ struct AISettingsView: View {
     }
 
     private func testDescriber() {
-        guard let describer = AISettings.makeDescriber(for: provider) else {
-            testState = .failure("Add an API key first.")
-            return
-        }
+        guard let describer = AISettings.makeDescriber(for: provider) else { return }
         guard let jpeg = Self.sampleImageJPEG() else { return }
         testState = .running
         Task {

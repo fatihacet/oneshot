@@ -46,7 +46,6 @@ private enum OnboardingStep: Int, CaseIterable {
     case afterCapture
     case shortcuts
     case upload
-    case search
     case done
 
     var title: String {
@@ -56,7 +55,6 @@ private enum OnboardingStep: Int, CaseIterable {
         case .afterCapture: return "After Capture"
         case .shortcuts: return "Shortcuts"
         case .upload: return "Upload"
-        case .search: return "Search"
         case .done: return "Done"
         }
     }
@@ -84,10 +82,6 @@ private struct OnboardingView: View {
                     title: "Upload to your own storage",
                     subtitle: "Optional. Share screenshots as links from any S3-compatible bucket. You can set this up later in Settings › Upload."
                 ) { UploadSettingsView() }
-                case .search: OptionalStep(
-                    title: "Search your screenshots",
-                    subtitle: "OneShot keeps a local history and recognizes text on this Mac. Optionally add an AI provider for captions and smarter search."
-                ) { AISettingsView() }
                 case .done: DoneStep()
                 }
             }
@@ -99,7 +93,7 @@ private struct OnboardingView: View {
                     Button("Back") { stepIndex -= 1 }
                 }
                 Spacer()
-                if step == .upload || step == .search {
+                if step == .upload {
                     Button("Skip") { stepIndex += 1 }
                 }
                 if step == .done {

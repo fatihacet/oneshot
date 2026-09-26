@@ -20,7 +20,7 @@ protocol TextEmbedder: Sendable {
 
 struct AIProviderError: LocalizedError {
     var message: String
-    /// Errors such as a missing or rejected API key that will fail for every request.
+    /// Errors such as an unreachable server or a missing model that will fail for every request.
     var isFatal: Bool
 
     var errorDescription: String? { message }
