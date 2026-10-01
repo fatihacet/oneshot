@@ -75,12 +75,12 @@ The menu bar menu shows the actions you gave a shortcut first; everything else i
 
 <table>
   <tr>
-    <td width="50%" valign="top"><strong>📌 Pin to screen</strong><br>Keep screenshots floating above everything. Scroll to resize, <kbd>⌥</kbd> + scroll for opacity, click-through lock.</td>
+    <td width="50%" valign="top"><strong>📌 Pin to screen</strong><br>Keep screenshots floating above everything, or capture straight to a pin with <kbd>⇧⌘2</kbd>. Scroll to resize, <kbd>⌥</kbd> + scroll for opacity, click-through lock.</td>
     <td width="50%" valign="top"><strong>📜 Scrolling capture</strong><br>Scroll by hand or let OneShot auto-scroll; frames are stitched live, with sticky headers kept once.</td>
   </tr>
   <tr>
     <td valign="top"><strong>☁️ Upload to your own storage</strong><br>AWS S3, Cloudflare R2, Backblaze B2 or MinIO. Public, custom domain or presigned links, copied to the clipboard. <kbd>⌥⌘4</kbd> captures and uploads in one go.</td>
-    <td valign="top"><strong>🔤 Copy text from anything</strong><br><kbd>⇧⌘2</kbd> recognizes text in any area of the screen, and reads QR codes and barcodes, on-device.</td>
+    <td valign="top"><strong>🔤 Copy text from anything</strong><br><kbd>⌃⇧⌘2</kbd> recognizes text in any area of the screen, and reads QR codes and barcodes, on-device.</td>
   </tr>
   <tr>
     <td valign="top"><strong>⚡️ Quick Access</strong><br>A thumbnail after every capture with Copy, Save, Pin, Upload, Annotate and drag and drop into any app.</td>
@@ -113,9 +113,10 @@ All shortcuts can be changed or cleared in **Settings › Shortcuts**.
 | Capture Area (Space toggles window mode) | <kbd>⇧⌘4</kbd> |
 | Capture Area to Clipboard (copy only, no preview, no file) | <kbd>⌃⇧⌘4</kbd> |
 | Capture Area and Upload (copies the link, no preview, no file) | <kbd>⌥⌘4</kbd> |
+| Capture Area and Pin (pins above other windows, no preview, no file) | <kbd>⇧⌘2</kbd> |
 | Capture Previous Area | <kbd>⌥⇧⌘4</kbd> |
 | Capture Fullscreen | <kbd>⇧⌘3</kbd> |
-| Capture Text (OCR) | <kbd>⇧⌘2</kbd> |
+| Capture Text (OCR) | <kbd>⌃⇧⌘2</kbd> |
 | Capture Window, Scrolling Area, timed captures, Record Screen, Record GIF, Open History | not set |
 
 macOS reserves <kbd>⇧⌘3</kbd> and <kbd>⇧⌘4</kbd> for its own screenshot tool. OneShot offers to disable those on first launch; you can toggle them any time in **Settings › Shortcuts**. Other apps using the same shortcuts (for example CleanShot X or Dropshare) must release them too.

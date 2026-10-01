@@ -12,6 +12,8 @@ final class CaptureService {
         case clipboardOnly
         /// Upload and copy the link: no Quick Access preview, no file.
         case upload
+        /// Pin above other windows: no Quick Access preview, no file.
+        case pin
         /// Recognize text in the selection and copy it.
         case text
     }
@@ -156,6 +158,10 @@ final class CaptureService {
             if Preferences.playSound { SoundPlayer.playCapture() }
             HistoryRecorder.record(&capture, savedURL: nil)
             Uploader.shared.upload(capture)
+        case .pin:
+            if Preferences.playSound { SoundPlayer.playCapture() }
+            HistoryRecorder.record(&capture, savedURL: nil)
+            PinManager.shared.pin(capture)
         case .image:
             if Preferences.playSound { SoundPlayer.playCapture() }
             if Preferences.copyToClipboard { ImageExporter.copyToClipboard(capture) }

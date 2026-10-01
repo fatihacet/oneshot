@@ -6,6 +6,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case captureArea
     case captureAreaToClipboard
     case captureAreaAndUpload
+    case captureAreaAndPin
     case capturePreviousArea
     case captureWindow
     case captureScrolling
@@ -24,6 +25,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureArea: return "Capture Area"
         case .captureAreaToClipboard: return "Capture Area to Clipboard"
         case .captureAreaAndUpload: return "Capture Area and Upload"
+        case .captureAreaAndPin: return "Capture Area and Pin"
         case .capturePreviousArea: return "Capture Previous Area"
         case .captureWindow: return "Capture Window"
         case .captureScrolling: return "Capture Scrolling Area"
@@ -41,6 +43,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         switch self {
         case .captureAreaToClipboard: return "Copies only. No preview, no file."
         case .captureAreaAndUpload: return "Uploads and copies the link. No preview, no file."
+        case .captureAreaAndPin: return "Pins the capture above other windows. No preview, no file."
         case .captureAreaWithTimer: return "Select an area, then capture after the self-timer."
         case .captureScrolling: return "Select an area, then scroll to capture long pages."
         case .recordVideo: return "Opens the recording panel. Press again to stop."
@@ -74,6 +77,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.control)
         case .captureAreaAndUpload:
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: HotKey.command | HotKey.option)
+        case .captureAreaAndPin:
+            return HotKey(keyCode: UInt32(kVK_ANSI_2), modifiers: commandShift)
         case .capturePreviousArea:
             return HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: commandShift | HotKey.option)
         case .captureWindow, .captureScrolling, .captureAreaWithTimer, .captureFullscreenWithTimer, .openHistory,
@@ -82,7 +87,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureFullscreen:
             return HotKey(keyCode: UInt32(kVK_ANSI_3), modifiers: commandShift)
         case .captureText:
-            return HotKey(keyCode: UInt32(kVK_ANSI_2), modifiers: commandShift)
+            return HotKey(keyCode: UInt32(kVK_ANSI_2), modifiers: commandShift | HotKey.control)
         }
     }
 
@@ -99,6 +104,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
                 return
             }
             service.captureArea(output: .upload, delay: delay)
+        case .captureAreaAndPin: service.captureArea(output: .pin, delay: delay)
         case .capturePreviousArea: service.capturePreviousArea(delay: delay)
         case .captureWindow: service.captureArea(startInWindowMode: true, delay: delay)
         case .captureScrolling: service.captureScrolling(delay: delay)
@@ -175,8 +181,14 @@ final class ShortcutStore: ObservableObject {
             if let value = stored[action.rawValue] {
                 // An empty string means the user cleared this shortcut.
                 bindings[action] = HotKey(storageString: value)
-            } else {
-                bindings[action] = action.defaultHotKey
+            }
+        }
+        // A default never takes a hotkey the user assigned to another action,
+        // e.g. when a later version gives that hotkey to a new action by default.
+        let assigned = Set(bindings.values)
+        for action in ShortcutAction.allCases where stored[action.rawValue] == nil {
+            if let hotKey = action.defaultHotKey, !assigned.contains(hotKey) {
+                bindings[action] = hotKey
             }
         }
         self.bindings = bindings

@@ -302,7 +302,7 @@ private struct ShortcutsStep: View {
     @State private var systemShortcutsEnabled = SystemScreenshotShortcuts.anyEnabled
 
     private let highlighted: [ShortcutAction] = [
-        .captureArea, .captureAreaToClipboard, .captureWindow, .captureFullscreen, .captureScrolling, .captureText, .openHistory,
+        .captureArea, .captureAreaToClipboard, .captureAreaAndPin, .captureWindow, .captureFullscreen, .captureScrolling, .captureText, .openHistory,
     ]
 
     var body: some View {
