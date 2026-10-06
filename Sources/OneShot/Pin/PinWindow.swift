@@ -146,12 +146,16 @@ final class PinWindow: NSPanel {
         }
     }
 
+    /// The editor takes over the screenshot, so the pin closes; the editor's Pin button pins the result again.
     @objc func openAnnotationEditor() {
         MainActor.assumeIsolated { AnnotationEditorWindowController.shared.open(capture) }
+        close()
     }
 
+    /// Like annotating, the background tool takes over the screenshot and the pin closes.
     @objc func openBackgroundTool() {
         MainActor.assumeIsolated { BackgroundToolWindowController.shared.open(capture) }
+        close()
     }
 
     @objc func uploadImage() {
