@@ -63,6 +63,7 @@ enum PrefKey {
     static let recordMicrophoneID = "recordMicrophoneID"
     static let cameraBubbleSize = "cameraBubbleSize"
     static let recordCursor = "recordCursor"
+    static let recordClicks = "recordClicks"
     static let recordCountdown = "recordCountdown"
     static let gifFrameRate = "gifFrameRate"
     static let gifMaxWidth = "gifMaxWidth"
@@ -108,6 +109,7 @@ enum Preferences {
             PrefKey.recordMicrophoneID: CaptureDevices.defaultDevice,
             PrefKey.cameraBubbleSize: CameraBubble.Size.medium.rawValue,
             PrefKey.recordCursor: true,
+            PrefKey.recordClicks: false,
             PrefKey.recordCountdown: 3,
             PrefKey.gifFrameRate: 15,
             PrefKey.gifMaxWidth: 960,
@@ -185,6 +187,8 @@ enum Preferences {
         set { defaults.set(newValue.rawValue, forKey: PrefKey.cameraBubbleSize) }
     }
     static var recordCursor: Bool { defaults.bool(forKey: PrefKey.recordCursor) }
+    /// Whether recordings draw a circle around the pointer on each click (macOS 15 and later).
+    static var recordClicks: Bool { defaults.bool(forKey: PrefKey.recordClicks) }
     /// Seconds to count down before a recording starts; 0 starts immediately.
     static var recordCountdown: Int { defaults.integer(forKey: PrefKey.recordCountdown) }
     static var gifFrameRate: Int { defaults.integer(forKey: PrefKey.gifFrameRate) }

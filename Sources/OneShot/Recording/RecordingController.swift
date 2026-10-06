@@ -162,6 +162,7 @@ final class RecordingController {
             codec: Preferences.recordCodec,
             quality: Preferences.recordQuality,
             showsCursor: Preferences.recordCursor,
+            showsMouseClicks: Preferences.recordClicks,
             capturesSystemAudio: format == .video && (options?.systemAudio ?? false),
             microphone: format == .video ? options?.microphone : nil
         ))

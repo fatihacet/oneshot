@@ -210,6 +210,7 @@ private struct CaptureSettingsView: View {
     @AppStorage(PrefKey.recordFrameRate) private var recordFrameRate = 30
     @AppStorage(PrefKey.recordQuality) private var recordQuality = RecordingQuality.standard.rawValue
     @AppStorage(PrefKey.recordCursor) private var recordCursor = true
+    @AppStorage(PrefKey.recordClicks) private var recordClicks = false
     @AppStorage(PrefKey.recordCountdown) private var recordCountdown = 3
     @AppStorage(PrefKey.gifFrameRate) private var gifFrameRate = 15
     @AppStorage(PrefKey.gifMaxWidth) private var gifMaxWidth = 960
@@ -255,6 +256,9 @@ private struct CaptureSettingsView: View {
                 }
                 Toggle("Record system audio", isOn: $recordAudio)
                 Toggle("Show the mouse pointer", isOn: $recordCursor)
+                if #available(macOS 15.0, *) {
+                    Toggle("Highlight mouse clicks", isOn: $recordClicks)
+                }
                 Picker("Countdown", selection: $recordCountdown) {
                     Text("None").tag(0)
                     Text("3 seconds").tag(3)

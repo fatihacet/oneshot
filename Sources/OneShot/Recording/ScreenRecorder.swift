@@ -10,6 +10,8 @@ struct RecordingConfiguration {
     var codec: RecordingCodec
     var quality: RecordingQuality
     var showsCursor: Bool
+    /// Draws a circle around the pointer on each click; ignored before macOS 15.
+    var showsMouseClicks: Bool
     var capturesSystemAudio: Bool
     var microphone: AVCaptureDevice?
 }
@@ -74,6 +76,7 @@ final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @uncheck
         if let sourceRect { config.sourceRect = sourceRect }
         config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(frameRate))
         config.showsCursor = configuration.showsCursor
+        if #available(macOS 15.0, *) { config.showMouseClicks = configuration.showsMouseClicks }
         config.pixelFormat = kCVPixelFormatType_32BGRA
         config.queueDepth = 6
         config.capturesAudio = configuration.capturesSystemAudio
