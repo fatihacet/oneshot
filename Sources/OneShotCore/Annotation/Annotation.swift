@@ -16,6 +16,14 @@ public struct Annotation: Identifiable, Codable, Equatable, Sendable {
         case pixelate(CGRect)
     }
 
+    /// A grip on a selected annotation that reshapes it when dragged.
+    public enum Handle: Hashable, Sendable {
+        /// An arrow or line endpoint.
+        case start, end
+        /// A grip on a rectangle's frame; `x` and `y` are each -1 (min edge), 0 (middle) or 1 (max edge).
+        case frame(x: Int, y: Int)
+    }
+
     public var id: UUID
     public var shape: Shape
     public var color: RGBAColor
@@ -72,6 +80,56 @@ public struct Annotation: Identifiable, Codable, Equatable, Sendable {
         }
     }
 
+    /// Whether `point` lies inside a rectangle or ellipse, hollow or not.
+    public func encloses(_ point: CGPoint) -> Bool {
+        switch shape {
+        case .rectangle(let rect, _): return rect.standardized.contains(point)
+        case .ellipse(let rect, _): return CGPath(ellipseIn: rect.standardized, transform: nil).contains(point)
+        default: return false
+        }
+    }
+
+    /// Grips for reshaping, with their positions in image points. Freehand strokes, text and counters only move.
+    public var handles: [(handle: Handle, position: CGPoint)] {
+        switch shape {
+        case .arrow(let start, let end), .line(let start, let end):
+            return [(.start, start), (.end, end)]
+        case .rectangle(let rect, _), .ellipse(let rect, _), .pixelate(let rect):
+            let rect = rect.standardized
+            return [-1, 0, 1].flatMap { x in
+                [-1, 0, 1].filter { y in x != 0 || y != 0 }.map { y in
+                    (.frame(x: x, y: y), CGPoint(x: rect.midX + CGFloat(x) * rect.width / 2, y: rect.midY + CGFloat(y) * rect.height / 2))
+                }
+            }
+        case .pen, .highlighter, .text, .counter:
+            return []
+        }
+    }
+
+    /// Returns a copy with `handle` dragged to `point`. With `constrained` (Shift), lines snap to 45°
+    /// and corner drags keep rectangles square, as they do while drawing.
+    public func reshaped(dragging handle: Handle, to point: CGPoint, constrained: Bool = false) -> Annotation {
+        var copy = self
+        switch shape {
+        case .arrow(var start, var end), .line(var start, var end):
+            switch handle {
+            case .start: start = constrained ? point.snappedTo45Degrees(from: end) : point
+            case .end: end = constrained ? point.snappedTo45Degrees(from: start) : point
+            case .frame: break
+            }
+            if case .arrow = shape { copy.shape = .arrow(start: start, end: end) } else { copy.shape = .line(start: start, end: end) }
+        case .rectangle(let rect, let filled):
+            copy.shape = .rectangle(rect.reshaped(dragging: handle, to: point, square: constrained), filled: filled)
+        case .ellipse(let rect, let filled):
+            copy.shape = .ellipse(rect.reshaped(dragging: handle, to: point, square: constrained), filled: filled)
+        case .pixelate(let rect):
+            copy.shape = .pixelate(rect.reshaped(dragging: handle, to: point, square: constrained))
+        case .pen, .highlighter, .text, .counter:
+            break
+        }
+        return copy
+    }
+
     /// Returns a copy moved by `offset`.
     public func offset(by offset: CGVector) -> Annotation {
         func move(_ point: CGPoint) -> CGPoint { CGPoint(x: point.x + offset.dx, y: point.y + offset.dy) }
@@ -113,13 +171,38 @@ public struct AnnotationDocument: Codable, Equatable, Sendable {
         return (numbers.max() ?? 0) + 1
     }
 
-    /// Topmost annotation at `point`.
-    public func annotation(at point: CGPoint, tolerance: Double = 6) -> Annotation? {
-        annotations.last { $0.contains(point, tolerance: tolerance) }
+    /// Topmost annotation at `point`. With `interiors`, a press inside a hollow rectangle or ellipse
+    /// picks it up too when nothing is hit directly, preferring the smallest such shape.
+    public func annotation(at point: CGPoint, tolerance: Double = 6, interiors: Bool = false) -> Annotation? {
+        if let hit = annotations.last(where: { $0.contains(point, tolerance: tolerance) }) { return hit }
+        guard interiors else { return nil }
+        return annotations.filter { $0.encloses(point) }.min { $0.bounds.width * $0.bounds.height < $1.bounds.width * $1.bounds.height }
     }
 }
 
 extension CGRect {
+    /// The rectangle spanning two drag points; with `square`, the longer side wins on both axes.
+    public init(from start: CGPoint, to end: CGPoint, square: Bool) {
+        var width = end.x - start.x
+        var height = end.y - start.y
+        if square {
+            let side = Swift.max(abs(width), abs(height))
+            width = width < 0 ? -side : side
+            height = height < 0 ? -side : side
+        }
+        self = CGRect(x: start.x, y: start.y, width: width, height: height).standardized
+    }
+
+    /// This rectangle with the frame grip `handle` dragged to `point`; the opposite side stays put.
+    func reshaped(dragging handle: Annotation.Handle, to point: CGPoint, square: Bool) -> CGRect {
+        guard case .frame(let x, let y) = handle else { return self }
+        let rect = standardized
+        let anchor = CGPoint(x: rect.midX - CGFloat(x) * rect.width / 2, y: rect.midY - CGFloat(y) * rect.height / 2)
+        if x == 0 { return CGRect(from: CGPoint(x: rect.minX, y: anchor.y), to: CGPoint(x: rect.maxX, y: point.y), square: false) }
+        if y == 0 { return CGRect(from: CGPoint(x: anchor.x, y: rect.minY), to: CGPoint(x: point.x, y: rect.maxY), square: false) }
+        return CGRect(from: anchor, to: point, square: square)
+    }
+
     init(points: [CGPoint]) {
         guard let first = points.first else {
             self = .zero
@@ -137,6 +220,15 @@ extension CGRect {
 }
 
 extension CGPoint {
+    /// This point moved onto the nearest multiple of 45° around `origin`, keeping its distance.
+    public func snappedTo45Degrees(from origin: CGPoint) -> CGPoint {
+        let dx = x - origin.x
+        let dy = y - origin.y
+        let length = hypot(dx, dy)
+        let angle = (atan2(dy, dx) / (.pi / 4)).rounded() * (.pi / 4)
+        return CGPoint(x: origin.x + cos(angle) * length, y: origin.y + sin(angle) * length)
+    }
+
     func distance(to other: CGPoint) -> Double {
         hypot(Double(x - other.x), Double(y - other.y))
     }

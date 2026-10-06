@@ -12,7 +12,9 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
     private var draftCrop: CGRect?
     private var dragStart: CGPoint?
     private var dragLast: CGPoint?
-    private var movingOriginal: Annotation?
+    /// The existing annotation being moved or reshaped, and its edited copy shown until mouse up.
+    private var activeGrab: Grab?
+    private var pendingEdit: Annotation?
     private var textField: NSTextField?
     private var editingTextOrigin: CGPoint?
     private var editingTextID: UUID?
@@ -23,6 +25,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         observation = model.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.needsDisplay = true }
         }
+        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .cursorUpdate, .activeInKeyWindow, .inVisibleRect], owner: self))
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
@@ -47,7 +50,10 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
     }
 
     private func imagePoint(_ event: NSEvent) -> CGPoint {
-        let point = convert(event.locationInWindow, from: nil)
+        imagePoint(at: convert(event.locationInWindow, from: nil))
+    }
+
+    private func imagePoint(at point: CGPoint) -> CGPoint {
         let frame = imageFrame
         return CGPoint(x: (point.x - frame.minX) / zoom, y: (point.y - frame.minY) / zoom)
     }
@@ -79,7 +85,9 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         context.draw(model.capture.image, in: imageBounds)
 
         var document = model.document
-        if let moving = pendingMove { document.annotations.removeAll { $0.id == moving.id } }
+        if let pendingEdit, let index = document.annotations.firstIndex(where: { $0.id == pendingEdit.id }) {
+            document.annotations[index] = pendingEdit
+        }
         if let draft { document.annotations.append(draft) }
         let needsPixelation = document.annotations.contains { if case .pixelate = $0.shape { return true } else { return false } }
         AnnotationRenderer.draw(
@@ -87,14 +95,33 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             pixelated: needsPixelation ? model.pixelatedImage : nil
         )
 
-        if let selected = pendingMove ?? model.selectedAnnotation {
-            context.setStrokeColor(NSColor.controlAccentColor.cgColor)
-            context.setLineWidth(1.5 / zoom)
-            context.setLineDash(phase: 0, lengths: [5 / zoom, 3 / zoom])
-            context.stroke(selected.bounds)
-        }
         drawCropOverlay(in: context)
         context.restoreGState()
+        drawSelection(in: context)
+    }
+
+    /// Outlines the selection, or shows its grips when it can be reshaped. Drawn in view points, outside the image clip.
+    private func drawSelection(in context: CGContext) {
+        guard let selected = pendingEdit ?? model.selectedAnnotation else { return }
+        context.saveGState()
+        defer { context.restoreGState() }
+        context.setStrokeColor(NSColor.controlAccentColor.cgColor)
+        context.setLineWidth(1.5)
+        let handles = selected.handles
+        guard !handles.isEmpty else {
+            let bounds = selected.bounds
+            context.setLineDash(phase: 0, lengths: [5, 3])
+            context.stroke(CGRect(origin: viewPoint(bounds.origin), size: CGSize(width: bounds.width * zoom, height: bounds.height * zoom)))
+            return
+        }
+        context.setFillColor(NSColor.white.cgColor)
+        context.setShadow(offset: CGSize(width: 0, height: -0.5), blur: 1.5, color: NSColor.black.withAlphaComponent(0.4).cgColor)
+        for (_, position) in handles {
+            let center = viewPoint(position)
+            let radius = Self.handleRadius
+            context.addEllipse(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
+        }
+        context.drawPath(using: .fillStroke)
     }
 
     private func drawCropOverlay(in context: CGContext) {
@@ -115,12 +142,84 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
 
     // MARK: Mouse
 
-    override func resetCursorRects() {
-        switch model.tool {
-        case .select: addCursorRect(bounds, cursor: .arrow)
-        case .text: addCursorRect(imageFrame, cursor: .iBeam)
-        default: addCursorRect(imageFrame, cursor: .crosshair)
+    /// What a press on an existing annotation picks up.
+    private enum Grab {
+        case move(Annotation)
+        case reshape(Annotation, Annotation.Handle)
+
+        var annotation: Annotation {
+            switch self {
+            case .move(let annotation), .reshape(let annotation, _): return annotation
+            }
         }
+    }
+
+    /// Radius of a selection grip, in view points.
+    private static let handleRadius: CGFloat = 4.5
+
+    /// What a press at `point` (image points) would pick up: a grip of the selection, or an annotation
+    /// to move. Every tool but Text and Crop can grab; only Select also grabs hollow shapes by their inside,
+    /// so drawing tools can still start a new shape there.
+    private func grab(at point: CGPoint) -> Grab? {
+        guard model.tool != .text, model.tool != .crop else { return nil }
+        if let selected = model.selectedAnnotation {
+            let reach = (Self.handleRadius + 3) / zoom
+            let nearest = selected.handles
+                .map { (handle: $0.handle, distance: hypot($0.position.x - point.x, $0.position.y - point.y)) }
+                .filter { $0.distance <= reach }
+                .min { $0.distance < $1.distance }
+            if let nearest { return .reshape(selected, nearest.handle) }
+        }
+        return model.document.annotation(at: point, tolerance: 6 / zoom, interiors: model.tool == .select).map(Grab.move)
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        updateCursor()
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        updateCursor()
+    }
+
+    private func updateCursor() {
+        guard let window, activeGrab == nil else { return }
+        let location = convert(window.mouseLocationOutsideOfEventStream, from: nil)
+        guard bounds.contains(location), textField?.frame.contains(location) != true else { return }
+        cursor(at: imagePoint(at: location)).set()
+    }
+
+    private func cursor(at point: CGPoint) -> NSCursor {
+        switch grab(at: point) {
+        case .move: return .openHand
+        case .reshape(_, let handle): return Self.cursor(for: handle)
+        case nil: break
+        }
+        switch model.tool {
+        case .select: return .arrow
+        case .text: return imageBounds.contains(point) ? .iBeam : .arrow
+        default: return imageBounds.contains(point) ? .crosshair : .arrow
+        }
+    }
+
+    private static func cursor(for handle: Annotation.Handle) -> NSCursor {
+        guard case .frame(let x, let y) = handle else { return .crosshair }
+        if #available(macOS 15, *) {
+            let position: NSCursor.FrameResizePosition
+            switch (x, y) {
+            case (-1, 1): position = .topLeft
+            case (0, 1): position = .top
+            case (1, 1): position = .topRight
+            case (-1, 0): position = .left
+            case (1, 0): position = .right
+            case (-1, -1): position = .bottomLeft
+            case (0, -1): position = .bottom
+            default: position = .bottomRight
+            }
+            return .frameResize(position: position, directions: .all)
+        }
+        if y == 0 { return .resizeLeftRight }
+        if x == 0 { return .resizeUpDown }
+        return .crosshair
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -130,19 +229,23 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         dragStart = point
         dragLast = point
 
-        switch model.tool {
-        case .select:
-            if let hit = model.document.annotation(at: point, tolerance: 6 / zoom) {
-                model.selectedID = hit.id
-                model.color = hit.color
-                model.lineWidth = hit.lineWidth
-                movingOriginal = hit
-                if event.clickCount == 2, case .text(let origin, let string, let fontSize) = hit.shape {
-                    beginTextEditing(at: origin, text: string, fontSize: fontSize, replacing: hit.id)
-                }
+        if let grab = grab(at: point) {
+            let hit = grab.annotation
+            model.selectedID = hit.id
+            model.color = hit.color
+            model.lineWidth = hit.lineWidth
+            if event.clickCount == 2, case .text(let origin, let string, let fontSize) = hit.shape {
+                beginTextEditing(at: origin, text: string, fontSize: fontSize, replacing: hit.id)
             } else {
-                model.selectedID = nil
+                activeGrab = grab
+                if case .move = grab { NSCursor.closedHand.set() }
             }
+            needsDisplay = true
+            return
+        }
+        model.selectedID = nil
+
+        switch model.tool {
         case .text:
             if let hit = model.document.annotation(at: point, tolerance: 4 / zoom),
                case .text(let origin, let string, let fontSize) = hit.shape {
@@ -170,18 +273,30 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         var point = imagePoint(event)
         let shift = event.modifierFlags.contains(.shift)
 
+        if let activeGrab {
+            switch activeGrab {
+            case .move(let original):
+                var offset = CGVector(dx: point.x - start.x, dy: point.y - start.y)
+                // Shift keeps the move horizontal or vertical.
+                if shift {
+                    if abs(offset.dx) > abs(offset.dy) { offset.dy = 0 } else { offset.dx = 0 }
+                }
+                pendingEdit = original.offset(by: offset)
+            case .reshape(let original, let handle):
+                pendingEdit = original.reshaped(dragging: handle, to: point, constrained: shift)
+            }
+            dragLast = point
+            needsDisplay = true
+            return
+        }
+
         switch model.tool {
-        case .select:
-            guard let original = movingOriginal else { return }
-            var moved = original.offset(by: CGVector(dx: point.x - start.x, dy: point.y - start.y))
-            moved.id = original.id
-            draftMove(moved)
         case .arrow, .line:
-            if shift { point = Self.snapAngle(from: start, to: point) }
+            if shift { point = point.snappedTo45Degrees(from: start) }
             let shape: Annotation.Shape = model.tool == .arrow ? .arrow(start: start, end: point) : .line(start: start, end: point)
             draft = Annotation(id: draft?.id ?? UUID(), shape: shape, color: model.color, lineWidth: model.lineWidth)
         case .rectangle, .ellipse, .pixelate:
-            let rect = Self.rect(from: start, to: point, square: shift)
+            let rect = CGRect(from: start, to: point, square: shift)
             let shape: Annotation.Shape
             switch model.tool {
             case .rectangle: shape = .rectangle(rect, filled: model.fillsShapes)
@@ -201,8 +316,8 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
             }
             draft = current
         case .crop:
-            draftCrop = Self.rect(from: start, to: point, square: shift).intersection(imageBounds)
-        case .text, .counter:
+            draftCrop = CGRect(from: start, to: point, square: shift).intersection(imageBounds)
+        case .select, .text, .counter:
             break
         }
         dragLast = point
@@ -213,16 +328,16 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         defer {
             dragStart = nil
             dragLast = nil
-            movingOriginal = nil
+            activeGrab = nil
+            pendingEdit = nil
             draft = nil
             draftCrop = nil
             needsDisplay = true
+            updateCursor()
         }
-        if model.tool == .select {
-            if let moved = pendingMove {
-                pendingMove = nil
-                model.replace(moved)
-            }
+        if activeGrab != nil {
+            // A grip dragged until the shape collapses snaps back instead.
+            if let pendingEdit, Self.isMeaningful(pendingEdit) { model.replace(pendingEdit) }
             return
         }
         if model.tool == .crop {
@@ -231,16 +346,6 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         }
         guard let draft, Self.isMeaningful(draft) else { return }
         model.add(draft)
-    }
-
-    /// Moving is previewed through the document so it redraws, then committed once on mouse up.
-    private var pendingMove: Annotation?
-
-    private func draftMove(_ annotation: Annotation) {
-        pendingMove = annotation
-        // Preview without creating undo steps: draw the moved copy as the draft and hide the original.
-        draft = annotation
-        needsDisplay = true
     }
 
     // MARK: Keyboard
@@ -268,7 +373,7 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         if flags.isEmpty, let character = event.charactersIgnoringModifiers?.lowercased().first,
            let tool = AnnotationTool.allCases.first(where: { $0.key == character }) {
             model.tool = tool
-            window?.invalidateCursorRects(for: self)
+            updateCursor()
             return
         }
         super.keyDown(with: event)
@@ -337,26 +442,6 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
     }
 
     // MARK: Helpers
-
-    private static func rect(from start: CGPoint, to end: CGPoint, square: Bool) -> CGRect {
-        var width = end.x - start.x
-        var height = end.y - start.y
-        if square {
-            let side = max(abs(width), abs(height))
-            width = width < 0 ? -side : side
-            height = height < 0 ? -side : side
-        }
-        return CGRect(x: start.x, y: start.y, width: width, height: height).standardized
-    }
-
-    /// Snaps to multiples of 45°.
-    private static func snapAngle(from start: CGPoint, to end: CGPoint) -> CGPoint {
-        let dx = end.x - start.x
-        let dy = end.y - start.y
-        let length = hypot(dx, dy)
-        let angle = (atan2(dy, dx) / (.pi / 4)).rounded() * (.pi / 4)
-        return CGPoint(x: start.x + cos(angle) * length, y: start.y + sin(angle) * length)
-    }
 
     private static func isMeaningful(_ annotation: Annotation) -> Bool {
         switch annotation.shape {

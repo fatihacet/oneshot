@@ -85,6 +85,55 @@ struct AnnotationTests {
         #expect(document.annotation(at: CGPoint(x: 50, y: 1))?.id == arrow.id)
     }
 
+    @Test func picksUpHollowShapesByTheirInside() {
+        let outer = Annotation(shape: .rectangle(CGRect(x: 0, y: 0, width: 200, height: 200), filled: false), color: red, lineWidth: 4)
+        let inner = Annotation(shape: .ellipse(CGRect(x: 50, y: 50, width: 100, height: 100), filled: false), color: red, lineWidth: 4)
+        // Drawn last, the outer box still yields to the smaller shape it surrounds.
+        let document = AnnotationDocument(annotations: [inner, outer])
+        #expect(document.annotation(at: CGPoint(x: 100, y: 100)) == nil)
+        #expect(document.annotation(at: CGPoint(x: 100, y: 100), interiors: true)?.id == inner.id)
+        #expect(document.annotation(at: CGPoint(x: 180, y: 180), interiors: true)?.id == outer.id)
+        // The corners of the ellipse's frame are outside it.
+        #expect(document.annotation(at: CGPoint(x: 62, y: 62), interiors: true)?.id == outer.id)
+    }
+
+    @Test func reshapesRectanglesByTheirGrips() {
+        let box = Annotation(shape: .rectangle(CGRect(x: 10, y: 10, width: 100, height: 50), filled: false), color: red, lineWidth: 4)
+        #expect(box.handles.count == 8)
+        #expect(box.handles.first { $0.handle == .frame(x: 1, y: 1) }?.position == CGPoint(x: 110, y: 60))
+
+        // A corner moves both edges it touches; the opposite corner stays put.
+        let corner = box.reshaped(dragging: .frame(x: 1, y: 1), to: CGPoint(x: 150, y: 90))
+        #expect(corner.shape == .rectangle(CGRect(x: 10, y: 10, width: 140, height: 80), filled: false))
+        #expect(corner.id == box.id)
+
+        // An edge only moves along its own axis.
+        let edge = box.reshaped(dragging: .frame(x: -1, y: 0), to: CGPoint(x: 30, y: 500))
+        #expect(edge.shape == .rectangle(CGRect(x: 30, y: 10, width: 80, height: 50), filled: false))
+
+        // Dragging past the opposite side flips the rectangle instead of inverting it.
+        let flipped = box.reshaped(dragging: .frame(x: 0, y: 1), to: CGPoint(x: 0, y: 0))
+        #expect(flipped.shape == .rectangle(CGRect(x: 10, y: 0, width: 100, height: 10), filled: false))
+
+        // Shift keeps a corner drag square.
+        let square = box.reshaped(dragging: .frame(x: 1, y: 1), to: CGPoint(x: 70, y: 40), constrained: true)
+        #expect(square.shape == .rectangle(CGRect(x: 10, y: 10, width: 60, height: 60), filled: false))
+    }
+
+    @Test func reshapesLinesByTheirEndpoints() {
+        let arrow = Annotation(shape: .arrow(start: CGPoint(x: 0, y: 0), end: CGPoint(x: 100, y: 0)), color: red, lineWidth: 4)
+        #expect(arrow.handles.map(\.handle) == [.start, .end])
+        #expect(arrow.reshaped(dragging: .end, to: CGPoint(x: 40, y: 80)).shape == .arrow(start: .zero, end: CGPoint(x: 40, y: 80)))
+        // Shift snaps the dragged end to 45° around the other one.
+        let snapped = arrow.reshaped(dragging: .start, to: CGPoint(x: 90, y: 3), constrained: true)
+        guard case .arrow(let start, let end) = snapped.shape else { Issue.record("not an arrow"); return }
+        #expect(abs(start.y) < 0.001 && start.x < 90)
+        #expect(end == CGPoint(x: 100, y: 0))
+
+        let counter = Annotation(shape: .counter(center: .zero, number: 1), color: red, lineWidth: 4)
+        #expect(counter.handles.isEmpty)
+    }
+
     @Test func movesAndNumbersAnnotations() {
         let counter = Annotation(shape: .counter(center: CGPoint(x: 10, y: 10), number: 1), color: red, lineWidth: 4)
         let moved = counter.offset(by: CGVector(dx: 5, dy: -5))

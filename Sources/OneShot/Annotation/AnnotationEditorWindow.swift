@@ -163,6 +163,5 @@ private struct AnnotationCanvas: NSViewRepresentable {
 
     func updateNSView(_ view: AnnotationCanvasView, context: Context) {
         view.needsDisplay = true
-        view.window?.invalidateCursorRects(for: view)
     }
 }
