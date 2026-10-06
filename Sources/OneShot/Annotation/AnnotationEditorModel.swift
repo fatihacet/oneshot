@@ -76,7 +76,7 @@ final class AnnotationEditorModel: ObservableObject {
     @Published var tool = AnnotationTool.arrow {
         didSet { if tool != .select { selectedID = nil } }
     }
-    @Published var color = AnnotationEditorModel.palette[0] {
+    @Published var color = AnnotationEditorModel.palette[0].color {
         didSet { restyleSelection() }
     }
     @Published var lineWidth: Double = 4 {
@@ -88,9 +88,10 @@ final class AnnotationEditorModel: ObservableObject {
     @Published private(set) var canRedo = false
     var close: () -> Void = {}
 
-    static let palette: [RGBAColor] = [
-        RGBAColor(hex: 0xFF3B30), RGBAColor(hex: 0xFF9500), RGBAColor(hex: 0xFFCC00), RGBAColor(hex: 0x34C759),
-        RGBAColor(hex: 0x007AFF), RGBAColor(hex: 0xAF52DE), RGBAColor(hex: 0x000000), RGBAColor(hex: 0xFFFFFF),
+    static let palette: [(name: String, color: RGBAColor)] = [
+        ("Red", RGBAColor(hex: 0xFF3B30)), ("Orange", RGBAColor(hex: 0xFF9500)), ("Yellow", RGBAColor(hex: 0xFFCC00)),
+        ("Green", RGBAColor(hex: 0x34C759)), ("Blue", RGBAColor(hex: 0x007AFF)), ("Purple", RGBAColor(hex: 0xAF52DE)),
+        ("Black", RGBAColor(hex: 0x000000)), ("White", RGBAColor(hex: 0xFFFFFF)),
     ]
     static let lineWidths: [(title: String, width: Double)] = [("Thin", 2), ("Medium", 4), ("Thick", 8)]
 
