@@ -37,14 +37,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         stopRecording = stop
         statusItem.menu = nil
         guard let button = statusItem.button else { return }
-        button.image = NSImage(systemSymbolName: "stop.circle.fill", accessibilityDescription: "Stop recording")
-        button.contentTintColor = .systemRed
-        button.imagePosition = .imageLeading
         button.target = self
         button.action = #selector(stopClicked)
         let update = { [weak button] in
             let seconds = Int(Date().timeIntervalSince(start))
-            button?.title = String(format: " %d:%02d", seconds / 60, seconds % 60)
+            button?.image = MenuBarIcon.recording(elapsed: String(format: "%d:%02d", seconds / 60, seconds % 60))
         }
         update()
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in

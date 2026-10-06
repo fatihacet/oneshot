@@ -54,4 +54,32 @@ enum MenuBarIcon {
         image.accessibilityDescription = "OneShot"
         return image
     }()
+
+    /// The stop button shown while recording: a red pill with a white stop square and the elapsed time.
+    /// Drawn in color rather than as a tinted symbol and title, which showed up black on dark menu bars.
+    static func recording(elapsed: String) -> NSImage {
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
+        let text = NSAttributedString(string: elapsed, attributes: [.font: font, .foregroundColor: NSColor.white])
+        let height: CGFloat = 18
+        let padding: CGFloat = 7
+        let stopSize: CGFloat = 7
+        let gap: CGFloat = 5
+        let textWidth = ceil(text.size().width)
+        let size = NSSize(width: padding + stopSize + gap + textWidth + padding, height: height)
+        let image = NSImage(size: size, flipped: false) { rect in
+            NSColor.systemRed.setFill()
+            NSBezierPath(roundedRect: rect, xRadius: height / 2, yRadius: height / 2).fill()
+
+            NSColor.white.setFill()
+            let stop = NSRect(x: padding, y: (height - stopSize) / 2, width: stopSize, height: stopSize)
+            NSBezierPath(roundedRect: stop, xRadius: 1.5, yRadius: 1.5).fill()
+
+            // Center the digits' cap height; drawing starts at the descender, below the baseline.
+            let baseline = (height - font.capHeight) / 2
+            text.draw(at: NSPoint(x: stop.maxX + gap, y: baseline + font.descender))
+            return true
+        }
+        image.accessibilityDescription = "Stop recording, \(elapsed)"
+        return image
+    }
 }
