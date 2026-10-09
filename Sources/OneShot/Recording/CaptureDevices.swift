@@ -79,10 +79,18 @@ final class MicrophoneCapture: NSObject, AVCaptureAudioDataOutputSampleBufferDel
     private let handler: (CMSampleBuffer) -> Void
     /// The session's clock, read on the first buffer. Only used on the handler queue.
     private var clock: CMClock?
+    /// Used instead of the session for voice processing, which capture sessions do not offer.
+    private let voiceProcessingMicrophone: VoiceProcessingMicrophone?
 
-    init(device: AVCaptureDevice, queue: DispatchQueue, handler: @escaping (CMSampleBuffer) -> Void) throws {
+    init(
+        device: AVCaptureDevice, voiceProcessing: Bool, queue: DispatchQueue,
+        handler: @escaping (CMSampleBuffer) -> Void
+    ) throws {
         self.handler = handler
+        voiceProcessingMicrophone = voiceProcessing
+            ? try VoiceProcessingMicrophone(device: device, queue: queue, handler: handler) : nil
         super.init()
+        guard voiceProcessingMicrophone == nil else { return }
         let input = try AVCaptureDeviceInput(device: device)
         let output = AVCaptureAudioDataOutput()
         output.audioSettings = [
@@ -103,11 +111,16 @@ final class MicrophoneCapture: NSObject, AVCaptureAudioDataOutputSampleBufferDel
     }
 
     /// Blocks until the microphone is running, so call it off the main thread.
-    func start() {
-        session.startRunning()
+    func start() throws {
+        if let voiceProcessingMicrophone {
+            try voiceProcessingMicrophone.start()
+        } else {
+            session.startRunning()
+        }
     }
 
     func stop() {
+        voiceProcessingMicrophone?.stop()
         session.stopRunning()
     }
 

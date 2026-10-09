@@ -34,6 +34,8 @@ struct RecordingOptions {
     var displayID: CGDirectDisplayID?
     var resolution: RecordingResolution
     var microphone: AVCaptureDevice?
+    /// Records the microphone through voice processing, so the Mic Mode picked in Control Center applies.
+    var isolatesVoice: Bool
     var systemAudio: Bool
 }
 
@@ -76,6 +78,14 @@ final class RecordingSetupModel: ObservableObject {
             updateMicrophone()
         }
     }
+    @Published var isolatesVoice: Bool {
+        didSet {
+            guard isolatesVoice != oldValue else { return }
+            Preferences.recordVoiceIsolation = isolatesVoice
+            showsMicModesWhenRunning = isolatesVoice
+            updateMicrophone()
+        }
+    }
     @Published var systemAudio: Bool {
         didSet { Preferences.recordAudio = systemAudio }
     }
@@ -85,6 +95,8 @@ final class RecordingSetupModel: ObservableObject {
     @Published private(set) var microphones: [DeviceChoice] = []
     /// Microphone input level from 0 to 1, for the meter.
     @Published private(set) var microphoneLevel: Float = 0
+    /// The Mic Mode picked in Control Center. It applies only with `isolatesVoice`.
+    @Published private(set) var microphoneMode = AVCaptureDevice.preferredMicrophoneMode
     @Published private(set) var cameraDenied = false
     @Published private(set) var microphoneDenied = false
     @Published private(set) var deviceError: String?
@@ -93,10 +105,15 @@ final class RecordingSetupModel: ObservableObject {
     private var meter: MicrophoneCapture?
     private let meterQueue = DispatchQueue(label: "dev.oneshot.microphone-meter")
     private var observers: [NSObjectProtocol] = []
+    private var modeObserver: MicrophoneModeObserver?
+    /// Opens the system Mic Mode picker once voice processing runs, if Voice Isolation is not picked yet.
+    /// The picker only offers Voice Isolation while the microphone is in use with voice processing.
+    private var showsMicModesWhenRunning = false
 
     init() {
         mode = Preferences.recordMode
         resolution = Preferences.recordResolution
+        isolatesVoice = Preferences.recordVoiceIsolation
         systemAudio = Preferences.recordAudio
         let connected = NSScreen.screens.compactMap(\.displayID)
         displayID = Preferences.recordDisplayID.flatMap { connected.contains($0) ? $0 : nil }
@@ -118,6 +135,7 @@ final class RecordingSetupModel: ObservableObject {
             resolution: resolution,
             microphone: CaptureDevices.isAuthorized(for: .audio)
                 ? CaptureDevices.device(for: microphoneID, mediaType: .audio) : nil,
+            isolatesVoice: isolatesVoice,
             systemAudio: systemAudio
         )
     }
@@ -156,6 +174,9 @@ final class RecordingSetupModel: ObservableObject {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.refreshDevices() }
         })
+        modeObserver = MicrophoneModeObserver { [weak self] in
+            self?.microphoneMode = AVCaptureDevice.preferredMicrophoneMode
+        }
         updateCamera()
         updateMicrophone()
     }
@@ -165,6 +186,7 @@ final class RecordingSetupModel: ObservableObject {
         isActive = false
         observers.forEach(NotificationCenter.default.removeObserver)
         observers.removeAll()
+        modeObserver = nil
         stopMeter()
         if !keepingCamera { CameraBubble.shared.hide() }
     }
@@ -238,7 +260,9 @@ final class RecordingSetupModel: ObservableObject {
         var peak: Float = 0
         var lastUpdate: CFTimeInterval = 0
         do {
-            let meter = try MicrophoneCapture(device: device, queue: meterQueue) { [weak self] buffer in
+            let meter = try MicrophoneCapture(
+                device: device, voiceProcessing: isolatesVoice, queue: meterQueue
+            ) { [weak self] buffer in
                 peak = max(peak, MicrophoneCapture.peakLevel(of: buffer))
                 let now = CACurrentMediaTime()
                 guard now - lastUpdate >= 1.0 / 20 else { return }
@@ -249,7 +273,19 @@ final class RecordingSetupModel: ObservableObject {
                 Task { @MainActor in self?.microphoneLevel = level }
             }
             self.meter = meter
-            DispatchQueue.global(qos: .userInitiated).async { meter.start() }
+            let showsMicModes = showsMicModesWhenRunning && isolatesVoice
+            showsMicModesWhenRunning = false
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                do {
+                    try meter.start()
+                } catch {
+                    Task { @MainActor in self?.deviceError = error.localizedDescription }
+                    return
+                }
+                if showsMicModes, AVCaptureDevice.preferredMicrophoneMode != .voiceIsolation {
+                    DispatchQueue.main.async { AVCaptureDevice.showSystemUserInterface(.microphoneModes) }
+                }
+            }
         } catch {
             deviceError = error.localizedDescription
         }
@@ -358,6 +394,12 @@ private struct RecordingSetupView: View {
                         PermissionRow(message: "OneShot is not allowed to use the microphone.", mediaType: .audio)
                     } else if model.microphoneID != CaptureDevices.noDevice {
                         LevelMeter(level: model.microphoneLevel)
+                        Toggle(isOn: $model.isolatesVoice) {
+                            Label("Voice isolation", systemImage: "person.wave.2")
+                        }
+                        if model.isolatesVoice {
+                            MicrophoneModeRow(mode: model.microphoneMode)
+                        }
                     }
                     Toggle(isOn: $model.systemAudio) {
                         Label("System audio", systemImage: "speaker.wave.2")
@@ -450,6 +492,29 @@ private struct PermissionRow: View {
                 .font(.caption)
             Spacer()
             Button("Open Settings") { CaptureDevices.openPrivacySettings(for: mediaType) }
+                .controlSize(.small)
+        }
+    }
+}
+
+/// The Mic Mode picked in Control Center, with a button that opens the system picker.
+private struct MicrophoneModeRow: View {
+    let mode: AVCaptureDevice.MicrophoneMode
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            if mode == .voiceIsolation {
+                Text("Mic Mode is Voice Isolation.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                Text("Choose Voice Isolation in Mic Mode to remove background noise.")
+                    .font(.caption)
+            }
+            Spacer()
+            Button("Mic Mode…") { AVCaptureDevice.showSystemUserInterface(.microphoneModes) }
                 .controlSize(.small)
         }
     }

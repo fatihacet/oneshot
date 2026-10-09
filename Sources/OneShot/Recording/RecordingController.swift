@@ -164,7 +164,8 @@ final class RecordingController {
             showsCursor: Preferences.recordCursor,
             showsMouseClicks: Preferences.recordClicks,
             capturesSystemAudio: format == .video && (options?.systemAudio ?? false),
-            microphone: format == .video ? options?.microphone : nil
+            microphone: format == .video ? options?.microphone : nil,
+            isolatesVoice: options?.isolatesVoice ?? false
         ))
         self.recorder = recorder
         if Preferences.playSound { NSSound(named: "Tink")?.play() }

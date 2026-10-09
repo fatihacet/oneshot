@@ -61,6 +61,7 @@ enum PrefKey {
     static let recordQuality = "recordQuality"
     static let recordCameraID = "recordCameraID"
     static let recordMicrophoneID = "recordMicrophoneID"
+    static let recordVoiceIsolation = "recordVoiceIsolation"
     static let cameraBubbleSize = "cameraBubbleSize"
     static let recordCursor = "recordCursor"
     static let recordClicks = "recordClicks"
@@ -107,6 +108,7 @@ enum Preferences {
             PrefKey.recordQuality: RecordingQuality.standard.rawValue,
             PrefKey.recordCameraID: CaptureDevices.noDevice,
             PrefKey.recordMicrophoneID: CaptureDevices.defaultDevice,
+            PrefKey.recordVoiceIsolation: false,
             PrefKey.cameraBubbleSize: CameraBubble.Size.medium.rawValue,
             PrefKey.recordCursor: true,
             PrefKey.recordClicks: false,
@@ -181,6 +183,11 @@ enum Preferences {
     static var recordMicrophoneID: String {
         get { defaults.string(forKey: PrefKey.recordMicrophoneID) ?? CaptureDevices.defaultDevice }
         set { defaults.set(newValue, forKey: PrefKey.recordMicrophoneID) }
+    }
+    /// Whether the microphone is recorded through voice processing, for the Voice Isolation mic mode.
+    static var recordVoiceIsolation: Bool {
+        get { defaults.bool(forKey: PrefKey.recordVoiceIsolation) }
+        set { defaults.set(newValue, forKey: PrefKey.recordVoiceIsolation) }
     }
     static var cameraBubbleSize: CameraBubble.Size {
         get { CameraBubble.Size(rawValue: defaults.string(forKey: PrefKey.cameraBubbleSize) ?? "") ?? .medium }

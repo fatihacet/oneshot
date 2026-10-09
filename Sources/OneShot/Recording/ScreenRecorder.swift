@@ -14,6 +14,8 @@ struct RecordingConfiguration {
     var showsMouseClicks: Bool
     var capturesSystemAudio: Bool
     var microphone: AVCaptureDevice?
+    /// Records the microphone through voice processing, so the Mic Mode picked in Control Center applies.
+    var isolatesVoice: Bool
 }
 
 /// Records a ScreenCaptureKit stream into an HEVC or H.264 MP4 file, with system audio and the
@@ -64,7 +66,9 @@ final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @uncheck
         var microphone: MicrophoneCapture?
         var microphoneInput: AVAssetWriterInput?
         if let device = configuration.microphone {
-            microphone = try MicrophoneCapture(device: device, queue: queue) { [weak self] buffer in
+            microphone = try MicrophoneCapture(
+                device: device, voiceProcessing: configuration.isolatesVoice, queue: queue
+            ) { [weak self] buffer in
                 self?.appendMicrophone(buffer)
             }
             microphoneInput = Self.addAudioInput(to: writer, channels: 1, bitRate: 96_000)
@@ -100,9 +104,9 @@ final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @uncheck
             self.outputURL = url
         }
         guard writer.startWriting() else { throw writer.error ?? CaptureError.emptyImage }
-        // Start the microphone first: it takes a moment, and samples before the first frame are dropped.
-        microphone?.start()
         do {
+            // Start the microphone first: it takes a moment, and samples before the first frame are dropped.
+            try microphone?.start()
             try await stream.startCapture()
         } catch {
             microphone?.stop()
