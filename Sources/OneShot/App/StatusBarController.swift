@@ -19,7 +19,17 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.delegate = self
         menu.autoenablesItems = false
         statusItem.menu = menu
+        installDropTarget()
         Self.shared = self
+    }
+
+    /// Files dropped on the menu bar icon are uploaded.
+    private func installDropTarget() {
+        guard let button = statusItem.button else { return }
+        let dropView = StatusBarDropView(button: button) { urls in Uploader.shared.upload(filesAt: urls) }
+        dropView.frame = button.bounds
+        dropView.autoresizingMask = [.width, .height]
+        button.addSubview(dropView)
     }
 
     private func showIdleIcon() {
@@ -94,6 +104,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             menu.addItem(submenuItem("Record", recordMenu))
         }
 
+        menu.addItem(submenuItem("Upload", uploadMenu()))
+
         menu.addItem(submenuItem("Clipboard Image", clipboardMenu()))
         menu.addItem(.separator())
 
@@ -152,7 +164,6 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             ClosureMenuItem(title: "Pin to Screen") { _ = PinManager.shared.pinFromClipboard() },
             ClosureMenuItem(title: "Annotate…") { AnnotationEditorWindowController.shared.openClipboardImage() },
             ClosureMenuItem(title: "Add Background…") { BackgroundToolWindowController.shared.openClipboardImage() },
-            ClosureMenuItem(title: "Upload") { Uploader.shared.uploadClipboardImage() },
         ]
         for item in items {
             item.isEnabled = hasImage
@@ -164,6 +175,39 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             hint.isEnabled = false
             submenu.addItem(hint)
         }
+        return submenu
+    }
+
+    /// Uploads from the clipboard, a file, or a recent recording.
+    private func uploadMenu() -> NSMenu {
+        let submenu = NSMenu()
+        let fromClipboard = ClosureMenuItem(title: "From Clipboard") { Uploader.shared.uploadClipboard() }
+        fromClipboard.isEnabled = !Uploader.clipboardFileURLs().isEmpty || NSImage.canInit(with: .general)
+        submenu.addItem(fromClipboard)
+        submenu.addItem(ClosureMenuItem(title: "Choose Files…") { Uploader.shared.chooseFiles() })
+
+        let recordings = Uploader.recentRecordings()
+        if !recordings.isEmpty {
+            submenu.addItem(.separator())
+            submenu.addItem(.sectionHeader(title: "Recent Recordings"))
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .short
+            for recording in recordings {
+                let item = ClosureMenuItem(title: recording.url.lastPathComponent) {
+                    Uploader.shared.upload(fileAt: recording.url)
+                }
+                item.toolTip = recording.url.path
+                if #available(macOS 14.4, *) {
+                    item.subtitle = formatter.localizedString(for: recording.date, relativeTo: Date())
+                }
+                submenu.addItem(item)
+            }
+        }
+
+        submenu.addItem(.separator())
+        let hint = NSMenuItem(title: "Or drop files on the menu bar icon", action: nil, keyEquivalent: "")
+        hint.isEnabled = false
+        submenu.addItem(hint)
         return submenu
     }
 

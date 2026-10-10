@@ -14,7 +14,7 @@ enum URLCommandHandler {
         "pin-clipboard": {
             if !PinManager.shared.pinFromClipboard() { Toast.show("No image on the clipboard", symbol: "doc.on.clipboard") }
         },
-        "upload-clipboard": { Uploader.shared.uploadClipboardImage() },
+        "upload-clipboard": { Uploader.shared.uploadClipboard() },
         "annotate-clipboard": { AnnotationEditorWindowController.shared.openClipboardImage() },
         "background-clipboard": { BackgroundToolWindowController.shared.openClipboardImage() },
         "open-settings": { SettingsWindowController.shared.show() },

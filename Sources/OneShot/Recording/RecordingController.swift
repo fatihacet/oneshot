@@ -3,7 +3,7 @@ import AVFoundation
 import OneShotCore
 import ScreenCaptureKit
 
-enum RecordingFormat {
+enum RecordingFormat: CaseIterable {
     case video
     case gif
 

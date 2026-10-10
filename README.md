@@ -79,7 +79,7 @@ The menu bar menu shows the actions you gave a shortcut first; everything else i
     <td width="50%" valign="top"><strong>📜 Scrolling capture</strong><br>Scroll by hand or let OneShot auto-scroll; frames are stitched live, with sticky headers kept once.</td>
   </tr>
   <tr>
-    <td valign="top"><strong>☁️ Upload to your own storage</strong><br>AWS S3, Cloudflare R2, Backblaze B2 or MinIO. Public, custom domain or presigned links, copied to the clipboard. <kbd>⌥⌘4</kbd> captures and uploads in one go.</td>
+    <td valign="top"><strong>☁️ Upload to your own storage</strong><br>AWS S3, Cloudflare R2, Backblaze B2 or MinIO. Public, custom domain or presigned links, copied to the clipboard. <kbd>⌥⌘4</kbd> captures and uploads in one go. Upload any file or a recent recording from the menu, or drop files on the menu bar icon.</td>
     <td valign="top"><strong>🔤 Copy text from anything</strong><br><kbd>⌃⇧⌘2</kbd> recognizes text in any area of the screen, and reads QR codes and barcodes, on-device.</td>
   </tr>
   <tr>
